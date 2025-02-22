@@ -49,7 +49,6 @@
             align-items: center;
             margin: 0 auto;
             max-width: 1200px;
-            padding: 0 20px; /* Added padding for better spacing */
         }
 
         header nav ul li {
@@ -72,14 +71,11 @@
             font-size: 24px;
             font-weight: bold;
             color: #ffffff; /* White */
-            flex: 1; /* Allow firm name to take available space */
         }
 
         .nav-right {
             display: flex;
-            gap: 20px; /* Reduced gap for better spacing */
-            justify-content: flex-end; /* Align navigation links to the right */
-            flex: 1; /* Allow navigation links to take available space */
+            gap: 40px;
         }
 
         .tagline {
@@ -207,9 +203,9 @@
         }
 
         .home-section {
-            text-align: left; /* Align text to the left */
+            text-align: left;
             display: flex;
-            align-items: flex-start; /* Align items to the top */
+            align-items: center;
             gap: 40px;
             animation: fadeInUp 1s ease;
         }
@@ -342,19 +338,18 @@
 
             .tagline {
                 top: 60px; /* Adjusted for mobile */
-                font-size: 14px; /* Smaller font size for mobile */
-                padding: 8px 0; /* Reduced padding for mobile */
+                font-size: 16px; /* Smaller font size for mobile */
             }
 
             .home-section {
                 flex-direction: column;
-                text-align: left; /* Keep text aligned to the left */
+                text-align: center;
                 gap: 20px;
             }
 
             .home-section img {
-                width: 100%; /* Make image responsive */
-                height: auto;
+                width: 200px;
+                height: 200px;
             }
 
             .home-section h1 {
