@@ -21,7 +21,7 @@
             padding: 0;
             color: #333333;
             line-height: 1.6;
-            padding-top: 120px; /* Adjusted for tagline */
+            padding-top: 160px; /* Adjusted for header and tagline */
         }
 
         header {
@@ -83,11 +83,11 @@
             color: #333333; /* Dark Grey */
             text-align: center;
             padding: 10px 0;
-            font-size: 18px;
+            font-size: 18px; /* Adjusted for desktop */
             font-style: italic;
             font-weight: bold; /* Bold Tagline */
             position: fixed;
-            top: 80px; /* Below header */
+            top: 80px; /* Adjusted for desktop */
             left: 0;
             width: 100%;
             z-index: 999;
@@ -329,24 +329,16 @@
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             body {
-                padding-top: 100px; /* Adjusted for smaller header */
+                padding-top: 140px; /* Adjusted for header and tagline */
             }
 
-            header nav ul {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 10px;
-            }
-
-            .nav-right {
-                flex-direction: column;
-                gap: 10px;
-                margin-top: 10px;
+            header {
+                padding: 10px 0; /* Reduced padding for mobile */
             }
 
             .tagline {
-                top: 60px; /* Adjusted for smaller header */
-                font-size: 16px;
+                top: 50px; /* Adjusted for mobile */
+                font-size: 16px; /* Smaller font size for mobile */
             }
 
             .home-section {
