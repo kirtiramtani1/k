@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="KM Consulting - Expert Project Management, Quality Management Systems, and Continual Improvement Services.">
+    <title>KM Consulting</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        /* Smooth scrolling and animations */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+            line-height: 1.6;
+            padding-top: 120px; /* Adjusted for tagline */
+        }
+
+        header {
+            background: #333333; /* Dark Grey */
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: background 0.3s ease;
+        }
+
+        header.scrolled {
+            background: rgba(51, 51, 51, 0.9); /* Dark Grey with transparency */
+        }
+
+        header nav ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto;
+            max-width: 1200px;
+        }
+
+        header nav ul li {
+            position: relative;
+        }
+
+        header nav ul li a {
+            text-decoration: none;
+            color: #ffffff; /* White */
+            font-weight: 500;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        header nav ul li a:hover {
+            color: #ff6f61; /* Coral */
+        }
+
+        .nav-left {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff; /* White */
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 40px;
+        }
+
+        .tagline {
+            background: #f8e9e4; /* Lightened Pinkish Beige */
+            color: #333333; /* Dark Grey */
+            text-align: center;
+            padding: 10px 0;
+            font-size: 18px;
+            font-style: italic;
+            font-weight: bold; /* Bold Tagline */
+            position: fixed;
+            top: 80px; /* Below header */
+            left: 0;
+            width: 100%;
+            z-index: 999;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: #ffffff;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            min-width: 250px;
+            text-align: left;
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            display: block;
+            padding: 12px;
+            text-decoration: none;
+            color: #333333;
+            transition: background 0.3s;
+        }
+
+        .dropdown-content a:hover {
+            background: #ff6f61; /* Coral */
+            color: white;
+        }
+
+        header nav ul li:hover .dropdown-content {
+            display: block;
+        }
+
+        section {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: auto;
+            text-align: center;
+        }
+
+        #services {
+            background-color: #f8e9e4; /* Lightened Pinkish Beige */
+        }
+
+        #about {
+            background-color: #505050; /* Coral Dark Grey */
+            color: #ffffff; /* White */
+        }
+
+        #contact {
+            background-color: #f4f4f4; /* Light Grey */
+        }
+
+        .contact-form {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease;
+        }
+
+        .contact-form input, .contact-form textarea, .service-dropdown {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #4a7c7c;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background-color: #ffffff;
+            color: #333333;
+        }
+
+        .contact-form input:focus, .contact-form textarea:focus, .service-dropdown:focus {
+            border-color: #ff6f61; /* Coral */
+            outline: none;
+        }
+
+        .contact-form button {
+            background: #4a7c7c; /* Teal */
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .contact-form button:hover {
+            background: #ff6f61; /* Coral */
+        }
+
+        .service-content {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+            animation: fadeIn 1s ease;
+        }
+
+        .about-us {
+            text-align: left;
+            margin-top: 40px;
+        }
+
+        .about-us img {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease;
+        }
+
+        .home-section {
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            animation: fadeInUp 1s ease;
+        }
+
+        .home-section img {
+            width: 300px;
+            height: 300px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            object-fit: cover;
+        }
+
+        .home-section h1 {
+            font-size: 36px;
+            color: #000000; /* Black */
+            margin-bottom: 10px;
+        }
+
+        .home-section h2 {
+            font-size: 24px;
+            color: #000000; /* Black */
+            margin-bottom: 20px;
+        }
+
+        .home-section p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333333; /* Dark Grey */
+        }
+
+        footer {
+            background: #333333; /* Dark Grey */
+            color: #ffffff; /* White */
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 60px;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .logo {
+            width: 150px;
+            margin-bottom: 20px;
+        }
+
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #ff6f61; /* Coral */
+        }
+
+        .service-card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+            text-align: left;
+            animation: fadeInUp 1s ease;
+        }
+
+        .service-card h3 {
+            color: #2a4a4a; /* Dark Teal */
+            margin-bottom: 10px;
+        }
+
+        .service-card p {
+            color: #333333; /* Dark Grey */
+        }
+
+        .service-card ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .service-card ul li {
+            padding: 5px 0;
+        }
+
+        .service-card ul li::before {
+            content: "•";
+            color: #ff6f61; /* Coral */
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate {
+            animation-duration: 1s;
+            animation-fill-mode: both;
+        }
+
+        .animate.delay-1 {
+            animation-delay: 0.5s;
+        }
+
+        .animate.delay-2 {
+            animation-delay: 1s;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 100px; /* Adjusted for smaller header */
+            }
+
+            header nav ul {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+            }
+
+            .nav-right {
+                flex-direction: column;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            .tagline {
+                top: 60px; /* Adjusted for smaller header */
+                font-size: 16px;
+            }
+
+            .home-section {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .home-section img {
+                width: 200px;
+                height: 200px;
+            }
+
+            .home-section h1 {
+                font-size: 28px;
+            }
+
+            .home-section h2 {
+                font-size: 20px;
+            }
+
+            .home-section p {
+                font-size: 14px;
+            }
+
+            section {
+                padding: 40px 20px;
+            }
+
+            .service-card {
+                padding: 15px;
+            }
+
+            .service-card h3 {
+                font-size: 20px;
+            }
+
+            .service-card p {
+                font-size: 14px;
+            }
+
+            .contact-form {
+                padding: 20px;
+            }
+
+            .contact-form input, .contact-form textarea, .service-dropdown {
+                font-size: 14px;
+            }
+
+            .contact-form button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            footer p {
+                font-size: 12px;
+            }
+        }
+    </style>
+    <script>
+        function showServiceContent() {
+            var selectedService = document.getElementById("serviceDropdown").value;
+            var contents = document.getElementsByClassName("service-content");
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].style.display = "none";
+            }
+            if (selectedService) {
+                document.getElementById(selectedService).style.display = "block";
+            }
+        }
+
+        // Header scroll effect
+        window.addEventListener("scroll", function() {
+            const header = document.querySelector("header");
+            if (window.scrollY > 50) {
+                header.classList.add("scrolled");
+            } else {
+                header.classList.remove("scrolled");
+            }
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <div class="nav-left">
+                    KM Consulting
+                </div>
+                <div class="nav-right">
+                    <li><a href="#home" class="active">Home</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                </div>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="tagline">
+        Helping Turn Your Ideas into Reality
+    </div>
+
+    <section id="home">
+        <div class="home-section animate fadeInUp">
+            <img src="profile.png" alt="Karan Malhotra">
+            <div>
+                <h1>Karan Malhotra, PMP, CSGB, CQM/OE</h1>
+                <h2>Seasoned Project Manager and Quality Professional</h2>
+                <p>Karan Malhotra is a seasoned project manager and quality professional with over 15 years of experience in quality assurance, project management, compliance audits, and lean methodologies. He is certified by the Project Management Institute and GBMP, and is a member of the American Society of Quality. Karan has implemented strategic projects, Quality Management Systems (ISO 9001, IATF 16949), and Lean systems globally, resulting in measurable advancements in customer satisfaction, product quality, and cost savings.</p>
+                <p>Karan holds a degree in Mechanical Engineering from PTU (India), a post-grad in Project Management from Humber (Canada), a Certification in Organizational Leadership from Harvard Business School (US), and a Certification in Global Supply Chain Management from Wharton School of Business (US).</p>
+            </div>
+        </div>
+    </section>
+    
+    <section id="services">
+        <h2>Our Services</h2>
+        <select id="serviceDropdown" class="service-dropdown animate fadeInUp delay-1" onchange="showServiceContent()">
+            <option value="">Select a Service</option>
+            <option value="project-management">Project Management</option>
+            <option value="quality-management">Quality Management</option>
+            <option value="continual-improvement">Continual Improvement</option>
+        </select>
+
+        <div id="project-management" class="service-content">
+            <div class="service-card animate fadeInUp delay-2">
+                <h3><i class="fas fa-project-diagram icon"></i>Project Management (Planning & Implementation)</h3>
+                <p>We provide widespread project planning and implementation practices to ensure your project’s success from the kickoff. Our services include:</p>
+                <ul>
+                    <li>Project Scope</li>
+                    <li>Project Charter</li>
+                    <li>Project Management Plan</li>
+                    <li>Stakeholder Management</li>
+                    <li>Work Breakdown Structure (WBS)</li>
+                    <li>Estimating Techniques (Analogous, Bottom-up, Parametric)</li>
+                    <li>Managing Triple Constraints (Time, Cost, Budget)</li>
+                </ul>
+            </div>
+        </div>
+        <div id="quality-management" class="service-content">
+            <div class="service-card animate fadeInUp delay-2">
+                <h3><i class="fas fa-check-circle icon"></i>Quality Management Systems (Auditing & Compliance)</h3>
+                <p>We provide the ISO 9001/IATF16949 framework to our clients to ensure they build and launch the best possible products and services to meet industry standards and customer requirements. Our services include:</p>
+                <ul>
+                    <li>Gap Assessments</li>
+                    <li>Internal Auditing</li>
+                    <li>Organizational Training / QMS Awareness</li>
+                    <li>Compliance Readiness</li>
+                    <li>Management Review Structure</li>
+                    <li>Quality Metrics/KPIs Deployment</li>
+                    <li>QMS Policies/ Manual / Standard Operating Procedures / Work instructions / Forms / Templates</li>
+                    <li>Document Creation</li>
+                </ul>
+            </div>
+        </div>
+        <div id="continual-improvement" class="service-content">
+            <div class="service-card animate fadeInUp delay-2">
+                <h3><i class="fas fa-chart-line icon"></i>Continual Improvement & Lean Practices</h3>
+                <p>We provide Lean coaching to our clients to have more efficient & effective business processes to reduce waste and variation. Our services include:</p>
+                <ul>
+                    <li>Kaizen training</li>
+                    <li>A3/8D problem solving training</li>
+                    <li>Plan. Do. Check. Act - ‘PDCA’ implementation</li>
+                    <li>Root Cause Analysis training (Use of 5Why, Fishbone, IS/IS NOT)</li>
+                    <li>Gemba Walk implementation</li>
+                    <li>Value Stream Mapping (VSM) training</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="about">
+        <h2>About Us</h2>
+        <div class="about-us">
+            <h3>Our Mission</h3>
+            <p>To deliver operational results and lasting business value for our clients by focusing on aligning people, processes, and technology.</p>
+            <img src="our mission .png" alt="Mission Image" class="animate fadeIn delay-1" style="width: 100%; height: 300px; object-fit: cover;">
+            
+            <h3>Our Vision</h3>
+            <p>Provide the best solutions in the field of project management and quality assurance to compete in the demanding market needs, continuously striving for customer satisfaction.</p>
+            <img src="our vission.png" alt="Vision Image" class="animate fadeIn delay-2" style="width: 100%; height: 300px; object-fit: cover;">
+        </div>
+    </section>
+    
+    <section id="contact">
+        <h2>Get in Touch</h2>
+        <div class="contact-form animate fadeInUp">
+            <h3>Send us a message</h3>
+            <form>
+                <input type="text" name="name" placeholder="Name" required>
+                <input type="email" name="email" placeholder="example@gmail.com" required>
+                <input type="text" name="subject" placeholder="Subject" required>
+                <textarea name="message" placeholder="Write your queries..." rows="5" required></textarea>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+        <p>To learn more about the services and/or discuss your project and quality assurance needs, please contact us below. We look forward to helping you turn your ideas into reality.</p>
+        <p>Email: <a href="mailto:contact@kmconsulting.ca">contact@kmconsulting.ca</a></p>
+        <p>Phone: <a href="tel:4168757806">416.875.7806 (M)</a></p>
+    </section>
+    
+    <footer>
+        <p>&copy;  KM Consulting. All rights reserved.</p>
+    </footer>
+</body>
+</html>
