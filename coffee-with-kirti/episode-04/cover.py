@@ -67,6 +67,27 @@ def sticker(rgba, border=18, shadow=True):
     return out
 
 
+def polaroid(im, caption, size=(500, 600), border=22, bottom=92):
+    """Selfie as a little polaroid print with a handwritten-style caption and soft shadow."""
+    w, h = size
+    s = max(w / im.width, h / im.height)
+    ph = im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
+    top = round(ph.height * 0.16)  # bias the crop upward: hair + face
+    ph = ph.crop(((ph.width - w) // 2, top, (ph.width - w) // 2 + w, top + h))
+    card = Image.new("RGBA", (w + 2 * border, h + border + bottom), CREAM + (255,))
+    card.paste(ph, (border, border))
+    font = ImageFont.truetype(os.path.join(FONTS, "CormorantGaramond-MediumItalic.ttf"), 52)
+    ImageDraw.Draw(card).text((card.width / 2, h + border + bottom / 2), caption, font=font, fill=ESPRESSO, anchor="mm")
+    pad = 40
+    out = Image.new("RGBA", (card.width + 2 * pad, card.height + 2 * pad), (0, 0, 0, 0))
+    sh = Image.new("RGBA", card.size, (60, 35, 20, 90)).filter(ImageFilter.GaussianBlur(0))
+    shadow = Image.new("RGBA", out.size, (0, 0, 0, 0))
+    shadow.paste(sh, (pad + 6, pad + 14))
+    out.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(16)))
+    out.alpha_composite(card, (pad, pad))
+    return out
+
+
 def sparkle(d, cx, cy, r, fill):
     pts = []
     for k in range(8):
@@ -80,7 +101,8 @@ def make_cover(path):
     import onnxruntime as ort
     os.makedirs(BUILD, exist_ok=True)
     sess = ort.InferenceSession(MODEL, providers=["CPUExecutionProvider"])
-    people = sticker(cutout(frame("v1", 3.0), sess), border=20)
+    friend = sticker(cutout(frame("v2", 35.2), sess), border=20)   # big smile, drinks + desserts at Tan Coffee
+    kirti = polaroid(frame("v2", 47.3), "very tasty")              # "it's very tasty" selfie
     jar = sticker(cutout(frame("v3", 15.5), sess, keep=(0.0, 0.38, 1.0, 0.9)), border=16)
 
     # background: butter yellow with a soft light pool behind the headline
@@ -128,13 +150,15 @@ def make_cover(path):
     for cx, cy, r in [(150, 520, 34), (930, 470, 26), (980, 600, 14), (110, 690, 16)]:
         sparkle(d, cx, cy, r, CARAMEL)
 
-    # people sticker, bottom; jar sticker tilted on the right
-    pw = 1200  # wider than the canvas so the frame's straight edges fall off-screen
-    p = people.resize((pw, round(people.height * pw / people.width)), Image.LANCZOS).rotate(-3, Image.BICUBIC, expand=True)
-    cv.alpha_composite(p, ((W - p.width) // 2 - 30, 850))
+    # Kirti's selfie tilted on the right, friend + the table in front on the left
+    k = kirti.rotate(6, Image.BICUBIC, expand=True)
+    cv.alpha_composite(k, (W - k.width + 30, 760))
+    fw = 700
+    f = friend.resize((fw, round(friend.height * fw / friend.width)), Image.LANCZOS).rotate(-4, Image.BICUBIC, expand=True)
+    cv.alpha_composite(f, (-130, 1010))
     jw = 270
     j = jar.resize((jw, round(jar.height * jw / jar.width)), Image.LANCZOS).rotate(12, Image.BICUBIC, expand=True)
-    jx, jy = 40, 1420
+    jx, jy = W - 330, 1500
     cv.alpha_composite(j, (jx, jy))
 
     # "jar 1 - us 0" tag
@@ -146,7 +170,7 @@ def make_cover(path):
     td.rounded_rectangle([10, 10, tw + 70, 96], radius=26, fill=YELLOW, outline=ESPRESSO, width=4)
     td.text((40, 26), txt, font=tag_font, fill=ESPRESSO)
     tag = tag.rotate(-8, Image.BICUBIC, expand=True)
-    cv.alpha_composite(tag, (jx + j.width - 40, jy + j.height - 150))
+    cv.alpha_composite(tag, (jx - 250, jy + j.height - 110))
 
     cv.convert("RGB").save(path, quality=95)
 
