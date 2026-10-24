@@ -4,60 +4,55 @@ Usage: python3 edit.py   (footage expected in ../footage/ep04, output in ./build
 """
 import os, subprocess, wave
 import numpy as np
+import ribbon
+from ribbon import PINK, BUTTER
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "..", "footage", "ep04")
 FONTS = os.path.join(HERE, "..", "fonts")
 BUILD = os.path.join(HERE, "build")
+RNNOISE = os.path.join(HERE, "..", "models", "sh.rnnn")  # RNNoise speech model (somnolent-hogwash)
 W, H, FPS = 1080, 1920, 30
 
 # Per-source grade: neutralise the night-street blue (v1) and the heavy
-# tungsten yellow of the cafe (v2/v3), then one shared creamy "latte" finish:
-# soft matte blacks, rolled-off highlights, gentle yellows, warm mids.
+# tungsten orange of the cafe (v2/v3), then one shared warm "coffee" finish.
 GRADE = {
-    "v1": "hqdn3d=4:3:6:6,colortemperature=temperature=5600:mix=0.6,eq=brightness=0.06:gamma=1.15:saturation=0.95,colorbalance=gs=-0.05:gm=-0.04:gh=-0.02",
-    "v2": "colortemperature=temperature=9000:mix=0.7,eq=saturation=0.82:gamma=1.04",
-    "v3": "colortemperature=temperature=8600:mix=0.65,eq=saturation=0.85",
+    "v1": "colortemperature=temperature=5200:mix=0.6,eq=brightness=0.045:gamma=1.1",
+    "v2": "colortemperature=temperature=7600:mix=0.55,eq=saturation=0.86",
+    "v3": "colortemperature=temperature=7200:mix=0.45,eq=saturation=0.9",
+    "img": "eq=saturation=0.95",
 }
-FINISH = ("curves=r='0/0.05 0.5/0.52 1/0.96':g='0/0.045 0.5/0.5 1/0.95':b='0/0.06 0.5/0.47 1/0.9',"
-          "selectivecolor=yellows='-0.1 0 0.15 0':reds='0 0.03 0.05 0':neutrals='0 0 0.03 0',"
-          "eq=contrast=1.04:saturation=0.92,vignette=angle=0.3")
+FINISH = ("curves=all='0/0.03 0.25/0.22 0.5/0.5 0.75/0.79 1/0.97',"
+          "colorbalance=rs=0.02:bs=-0.03:rh=0.03:gh=0.01:bh=-0.03,"
+          "vibrance=intensity=0.08,vignette=angle=0.35")
 
 # Edit decision list. Captions use source-clip times; **word** = highlight.
 # gain: dialogue level (b-roll is ducked so the music carries it).
-# punch: source time of a quick punch-in; hook/sticker: on-screen text; sfx: sound accent.
-HOOK = ("2 GIRLS. 1 JAR.", "0 CHANCE.")
-
 EDL = [
-    # cold open - flash-forward to the jar defeat, then rewind to how the night started
-    dict(src="v3", a=11.9, b=14.1, zoom=1.04, punch=12.3, headline=HOOK,
+    # cold open - the jar that beat us, with one line to make you stay
+    dict(src="v3", a=11.0, b=14.1, zoom=1.12, ribbon_y=150, ribbons=[
+        dict(words=["COFFEE WITH KIRTI", "EP 04"], colors=BUTTER, cy=330, angle=8, direction=-1, bh=110),
+        dict(words=["RATING TAN COFFEE", "LOSING TO A JAR"], colors=PINK, cy=230, angle=-6, direction=1, bh=165, speed=430)],
          caps=[(12.24, 14.1, "nobody can even **open** this")]),
-    # title over the first dessert jar
-    dict(src="v2", a=0.6, b=2.7, gain=0.35, title=True, sfx="whoosh", flash=True),
-    dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, section="location: the road",
-         caps=[(10.4, 12.36, "we're sitting on the **ROAD**")]),
-    dict(src="v1", a=0.0, b=2.3, caps=[(0.0, 2.3, "no idea where we've ended up")]),
-    dict(src="v1", a=3.9, b=9.0, punch=6.6, caps=[
-        (3.98, 5.88, "sitting on the road"),
-        (5.88, 9.0, "after getting haircuts like **THIS**")]),
-    dict(src="v1", a=12.3, b=14.6, zoom=1.1, caps=[(12.36, 14.6, "haan, **piyenge** yaar!")]),
-    dict(src="v2", a=19.3, b=21.0, gain=0.3, sfx="whoosh", flash=True, section="honest review: Tan Coffee"),
-    dict(src="v2", a=6.0, b=8.1, caps=[(6.14, 8.1, "this is **nice**, guys")]),
-    dict(src="v2", a=9.0, b=11.6, punch=10.4, caps=[(9.02, 11.6, "now... the **first bite**")]),
-    dict(src="v2", a=23.0, b=25.0, gain=0.25),
-    dict(src="v2", a=28.1, b=32.1, punch=29.94, sticker=(29.95, "taste test: PASSED"),
-         caps=[(28.22, 29.9, "how is it?"), (29.94, 31.0, "**very tasty**"), (31.1, 32.1, "it IS tasty")]),
-    dict(src="v2", a=36.7, b=38.0, caps=[(36.88, 38.0, "so, **Kirti?**")]),
-    dict(src="v2", a=46.2, b=48.6, punch=46.5, caps=[(46.4, 48.4, "it's **very tasty**")]),
+    # title over the first dessert jar (which, ironically, opens just fine)
+    dict(src="v2", a=0.0, b=3.6, zoom=1.0, gain=0.15, title=True),
+    dict(src="v2", a=19.0, b=21.4, zoom=1.0, gain=0.15),
+    dict(src="v2", a=4.2, b=8.1, zoom=1.0, caps=[(6.14, 8.1, "this is **nice**, guys")]),
+    dict(src="v2", a=9.0, b=12.6, zoom=1.06, caps=[(9.02, 11.6, "now... the **first bite**")]),
+    dict(src="v2", a=14.0, b=16.4, zoom=1.0, caps=[(14.8, 16.3, "let's taste it")]),
+    dict(src="v2", a=22.0, b=26.0, zoom=1.0, gain=0.12, note="the order"),
+    dict(src="v2", a=27.9, b=29.9, zoom=1.0, caps=[(28.22, 29.9, "how is it?")]),
+    dict(src="v2", a=29.9, b=32.1, zoom=1.14, caps=[(29.94, 31.0, "**very tasty**"), (31.1, 32.1, "it IS tasty")]),
+    dict(src="v2", a=36.7, b=38.0, zoom=1.0, caps=[(36.88, 38.0, "so, **Kirti?**")]),
+    dict(src="v2", a=40.2, b=43.0, zoom=1.0, gain=0.12),
+    dict(src="v2", a=45.9, b=48.9, zoom=1.0, caps=[(46.4, 48.4, "it's **very tasty**")]),
     # the jar that would not open
-    dict(src="v3", a=7.8, b=11.0, flash=True, section="the jar that won't open", caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
-    dict(src="v3", a=12.0, b=14.1, punch=12.3, sticker=(12.9, "jar 1 – us 0"),
-         caps=[(12.24, 14.1, "nobody can even **open** this")]),
-    # sign-off
-    dict(src="v2", a=32.6, b=35.6, punch=34.86, caps=[(32.76, 34.8, "so you should come to **Tan Coffee** again"), (34.86, 35.6, "**again!**")]),
-    # ...then the laugh "develops" into a polaroid
-    dict(src="v1", a=2.3, b=3.05, zoom=1.05),
-    dict(src="v1", still=3.0, dur=3.4, polaroid=True, endcard=True, flash=True, sfx="shutter"),
+    dict(src="v3", a=7.7, b=11.0, zoom=1.0, caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
+    dict(src="v3", a=11.0, b=14.1, zoom=1.15, note="jar 1 – us 0", caps=[(12.24, 14.1, "nobody can even **open** this")]),
+    # sign-off, then the end card over one last happy bite
+    dict(src="v2", a=32.6, b=35.6, zoom=1.0, caps=[(32.76, 34.8, "so you should come to **Tan Coffee** again"), (34.86, 35.6, "again!")]),
+    dict(src="v2", a=50.0, b=54.0, zoom=1.0, gain=0.15, endcard=True, ribbon_y=1080, ribbons=[
+        dict(words=["SEE YOU AT THE NEXT TABLE", "COFFEE WITH KIRTI"], colors=PINK, cy=230, angle=-5, direction=1, bh=130)]),
 ]
 
 
@@ -65,54 +60,32 @@ def run(cmd):
     subprocess.run(cmd, check=True)
 
 
-def seg_polaroid(out, s):
-    """Freeze the moment as a slightly tilted polaroid over a blurred copy of itself."""
-    n = round(s["dur"] * FPS)
-    look = f"{GRADE[s['src']]},{FINISH}"
-    fc = (f"[0:v]fps={FPS},{look},split[bg][fg];"
-          f"[bg]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},gblur=sigma=30,eq=brightness=-0.12[b];"
-          "[fg]scale=720:900:force_original_aspect_ratio=increase:flags=lanczos,crop=720:900,unsharp=5:5:0.5,"
-          "pad=772:1056:26:26:color=0xF7F2EA,format=rgba,rotate=-3*PI/180:ow=rotw(iw):oh=roth(ih):c=none[card];"
-          f"[b][card]overlay=x=(W-w)/2:y=760-h/2,"
-          f"zoompan=z='1.0+0.06*exp(-in/5)+0.02*in/{n}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s={W}x{H}:fps={FPS},"
-          "format=yuv420p[v]")
-    run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", os.path.join(BUILD, "still.png"),
-         "-f", "lavfi", "-t", f"{n/FPS:.3f}", "-i", "anullsrc=r=48000:cl=stereo",
-         "-filter_complex", fc, "-map", "[v]", "-map", "1:a", "-frames:v", str(n),
-         "-c:v", "libx264", "-crf", "16", "-preset", "medium", "-c:a", "pcm_s16le", "-t", f"{n/FPS:.3f}", out])
-    return out, n / FPS
-
-
 def seg_video(i, s):
     out = os.path.join(BUILD, f"seg{i:02d}.mp4")
-    if s.get("polaroid"):
-        if os.environ.get("REUSE_SEGMENTS") and os.path.exists(out):
-            return out, round(s["dur"] * FPS) / FPS
-        run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["still"]), "-i", os.path.join(SRC, s["src"] + ".mp4"),
-             "-frames:v", "1", os.path.join(BUILD, "still.png")])
-        return seg_polaroid(out, s)
-    d = s["b"] - s["a"]
-    frz = s.get("freeze", 0.0)
-    n = round(d * FPS) + round(frz * FPS)
     if os.environ.get("REUSE_SEGMENTS") and os.path.exists(out):
-        return out, n / FPS
+        d = s["dur"] if "dur" in s else s["b"] - s["a"]
+        return out, round(d * FPS) / FPS
     z = s.get("zoom", 1.0)
-    # gentle push-in across every shot + an eased snap punch-in on the funny beat
-    zexpr = f"{z}+0.035*in/{round(d*FPS)}"
-    if "punch" in s:
-        p = round((s["punch"] - s["a"]) * FPS)
-        zexpr += f"+0.14*min(1,max(0,(in-{p})/4))"
-    fit = f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H}"
-    zoom = (f"zoompan=z='{zexpr}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s={W}x{H}:fps={FPS}")
-    pad = f",tpad=stop_mode=clone:stop_duration={frz}" if frz else ""
+    fit = f"scale={int(W*z)}:{int(H*z)}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H}"
+    if s["src"].startswith("i"):
+        d = s["dur"]
+        n = int(d * FPS)
+        vf = (f"scale=2160:-2:flags=lanczos,zoompan=z='1.0+0.06*on/{n}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2'"
+              f":d={n}:s={W}x{H}:fps={FPS},{GRADE['img']},{FINISH},format=yuv420p")
+        run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(d), "-i", os.path.join(SRC, s["src"] + ".jpg"),
+             "-f", "lavfi", "-t", str(d), "-i", "anullsrc=r=48000:cl=stereo",
+             "-vf", vf, "-frames:v", str(n), "-c:v", "libx264", "-crf", "16", "-preset", "medium",
+             "-c:a", "pcm_s16le", "-shortest", out])
+        return out, n / FPS
+    d = s["b"] - s["a"]
     g = s.get("gain", 1.0)
-    vf = f"fps={FPS},hqdn3d=2:2:4:4,{fit},{zoom}{pad},unsharp=5:5:0.5,{GRADE[s['src']]},{FINISH},format=yuv420p"
-    af = (f"aresample=48000,aformat=channel_layouts=stereo,volume={g},"
-          f"afade=t=in:d=0.03,afade=t=out:st={d-0.04:.3f}:d=0.04,apad=whole_dur={n/FPS:.3f}")
+    vf = (f"fps={FPS},hqdn3d=2:2:4:4,{fit},unsharp=5:5:0.6,{GRADE[s['src']]},{FINISH},format=yuv420p")
+    af = (f"aresample=48000,aformat=channel_layouts=stereo,highpass=f=90,volume={g},"
+          f"afade=t=in:d=0.03,afade=t=out:st={d-0.04:.3f}:d=0.04")
     run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["a"]), "-t", f"{d:.3f}", "-i", os.path.join(SRC, s["src"] + ".mp4"),
-         "-vf", vf, "-af", af, "-frames:v", str(n), "-c:v", "libx264", "-crf", "16", "-preset", "medium",
-         "-c:a", "pcm_s16le", "-t", f"{n/FPS:.3f}", out])
-    return out, n / FPS
+         "-vf", vf, "-af", af, "-frames:v", str(round(d * FPS)), "-c:v", "libx264", "-crf", "16", "-preset", "medium",
+         "-c:a", "pcm_s16le", out])
+    return out, round(d * FPS) / FPS
 
 
 def ts(t):
@@ -121,68 +94,10 @@ def ts(t):
     return f"{int(h)}:{int(m):02d}:{s:05.2f}"
 
 
-FONT_FILES = {
-    "Inter ExtraBold": "/usr/share/fonts/opentype/inter/Inter-ExtraBold.otf",
-    "Luckiest Guy": os.path.join(FONTS, "LuckiestGuy-Regular.ttf"),
-}
-YELLOW, INK, PINK, CREAM = "&H4DE1FF&", "&H1A1410&", "&HA34FFF&", "&HEAF2F7&"
-
-
-def text_w(font, size, txt):
-    """Rendered width in px of txt at an ASS font size (libass sizes by ascent+descent)."""
-    from PIL import ImageFont
-    f = ImageFont.truetype(FONT_FILES[font], 100)
-    asc, desc = f.getmetrics()
-    return ImageFont.truetype(FONT_FILES[font], round(size * 100 / (asc + desc))).getlength(txt)
-
-
-def rrect(w, h, r):
-    w, h = round(w), round(h)
-    return (f"m {r} 0 l {w-r} 0 b {w} 0 {w} 0 {w} {r} l {w} {h-r} b {w} {h} {w} {h} {w-r} {h} "
-            f"l {r} {h} b 0 {h} 0 {h} 0 {h-r} l 0 {r} b 0 0 0 0 {r} 0")
-
-
-def ass_text(t, t0=0, dur=1.0):
-    """Words type on one after another; **word** turns bright yellow."""
-    words, out, hi = t.replace("**", " ** ").split(), [], False
-    real = [w for w in words if w != "**"]
-    step = min(90, int(dur * 1000 * 0.45 / max(len(real), 1)))
-    k = 0
-    for w in words:
-        if w == "**":
-            hi = not hi
-            continue
-        col = YELLOW if hi else "&HFFFFFF&"
-        out.append(rf"{{\alpha&HFF&\1c{col}\t({k*step},{k*step+70},\alpha&H00&)}}{w}")
-        k += 1
-    return " ".join(out)
-
-
-def box(layer, t0, t1, x, y, txt, size=58, rot=0, fill="&HFFFFFF&", ink=INK, anim="slide"):
-    """White rounded label (reference style) that springs in."""
-    w = text_w("Inter ExtraBold", size, txt) + size * 0.9
-    h = size * 1.55
-    move = {"slide": rf"\move({x-60},{y},{x},{y},0,180)", "none": rf"\pos({x},{y})"}[anim]
-    spring = r"\fscx70\fscy70\t(0,140,\fscx106\fscy106)\t(140,240,\fscx100\fscy100)\fad(0,160)"
-    return [
-        f"Dialogue: {layer},{ts(t0)},{ts(t1)},Box,,0,0,0,,{{\\an5{move}\\frz{rot}\\1c{fill}\\shad6\\4a&HA0&{spring}\\p1}}{rrect(w, h, round(h*0.32))}{{\\p0}}",
-        f"Dialogue: {layer+1},{ts(t0)},{ts(t1)},BoxTxt,,0,0,0,,{{\\an5{move}\\frz{rot}\\fs{size}\\1c{ink}{spring}}}{txt}",
-    ]
-
-
-def headline(layer, t0, t1, lines, y0=330, size=150):
-    """Chunky two-tone headline; each word drops in with a bounce, then gently sways."""
-    ev, k = [], 0
-    for li, line in enumerate(lines):
-        y = y0 + li * round(size * 0.98)
-        x = 540
-        ev.append(f"Dialogue: {layer},{ts(t0)},{ts(t1)},Head,,0,0,0,,{{\\an5\\pos({x},{y})\\frz{3 if li == 0 else -2}"
-                  + "\\fad(0,150)}"
-                  + " ".join(rf"{{\alpha&HFF&\fscx40\fscy40\t({k0*110},{k0*110+90},\alpha&H00&\fscx115\fscy115)"
-                             rf"\t({k0*110+90},{k0*110+200},\fscx100\fscy100)}}{w}"
-                             for k0, w in enumerate(line.split(), start=k)))
-        k += len(line.split())
-    return ev
+def ass_text(t):
+    # **word** -> warm caramel highlight
+    parts = t.split("**")
+    return "".join(p if k % 2 == 0 else r"{\c&H6FB0E8&}" + p + r"{\c&HFFFFFF&}" for k, p in enumerate(parts))
 
 
 def build_ass(timeline):
@@ -195,106 +110,44 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,Inter ExtraBold,74,&H00FFFFFF,&H00FFFFFF,&H00141018,&H80000000,0,0,0,0,100,100,0,0,1,4.5,4,2,100,100,470,1
-Style: Head,Luckiest Guy,150,{YELLOW},&H00FFFFFF,{INK},{PINK},0,0,0,0,100,100,2,0,1,9,9,5,40,40,0,1
-Style: Box,Inter,10,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
-Style: BoxTxt,Inter ExtraBold,58,{INK},&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
-Style: Badge,Inter ExtraBold,30,&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,0,0,0,0,100,100,2,0,1,0,2,7,0,0,0,1
+Style: Cap,Inter SemiBold,68,&H00FFFFFF,&H00FFFFFF,&H8C0E1218,&H00000000,0,0,0,0,100,100,0.3,0,3,16,0,2,110,110,430,1
 Style: Title,Cormorant Garamond SemiBold,128,&H00F3F7FB,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,1,0,1,0,4,5,60,60,0,1
 Style: Sub,Cormorant Garamond Medium Italic,66,&H00A9D3EE,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,6,0,1,0,3,5,60,60,0,1
-Style: Card,Cormorant Garamond Medium Italic,50,&H00403A36,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,0,0,5,0,0,0,1
-Style: Flash,Inter,10,&H00F7FAFC,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+Style: Note,Cormorant Garamond Medium Italic,78,&H00F3F7FB,&H00FFFFFF,&H00000000,&H8C000000,0,0,0,0,100,100,0.5,0,1,0,3,8,90,90,300,1
 Style: Rule,Inter,10,&H00A9D3EE,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ev = []
-    pop = r"{\fad(40,90)\fscx88\fscy88\t(0,110,\fscx104\fscy104)\t(110,190,\fscx100\fscy100)}"
-    band = lambda t0, t1, y: (f"Dialogue: 0,{ts(t0)},{ts(t1)},Rule,,0,0,0,,{{\\pos(0,{y})\\an7\\1c&H0A0C10&\\1a&H70&"
-                              f"\\blur40\\fad(300,300)\\p1}}m 0 0 l 1080 0 1080 470 0 470{{\\p0}}")
-    rel = lambda start, s, x: start + x - s["a"]
-    total = timeline[-1][0] + timeline[-1][1]
+    pop = r"{\fad(90,110)\fscx94\fscy94\t(0,140,\fscx100\fscy100)}"
     for start, dur, s in timeline:
-        end = start + dur
         for (ca, cb, txt) in s.get("caps", []):
-            t0, t1 = max(rel(start, s, ca), start), min(rel(start, s, cb), end)
-            ev.append(f"Dialogue: 1,{ts(t0)},{ts(t1)},Cap,,0,0,0,,{pop}{ass_text(txt, t0, t1 - t0)}")
-        if "headline" in s:
-            ev += headline(5, start + 0.05, end, s["headline"])
-        if "section" in s:
-            ev += box(5, start + 0.1, start + 1.9, 540, 330, s["section"])
-        if "sticker" in s:
-            st, txt = s["sticker"]
-            ev += box(5, rel(start, s, st), end, 735, 620, txt, size=56, rot=6, fill=YELLOW, anim="none")
-        if s.get("title"):
-            a, b, y = start + 0.1, end - 0.05, 760
-            ev.append(band(a - 0.05, b, y - 200))
-            rise = lambda y0: rf"\move(540,{y0+30},540,{y0},0,450)"
-            f = r"{\fad(250,200)\blur0.6\fscx92\fscy92\t(0,500,\fscx100\fscy100)}"
+            if "dur" in s:
+                t0, t1 = start + ca, start + cb
+            else:
+                t0, t1 = start + max(ca - s["a"], 0), start + min(cb - s["a"], dur)
+            ev.append(f"Dialogue: 1,{ts(t0)},{ts(t1)},Cap,,0,0,0,,{pop}{ass_text(txt)}")
+        if "note" in s:  # soft dark band at the top keeps the serif line readable on bright frames
+            ev.append(f"Dialogue: 1,{ts(start+0.05)},{ts(start+dur-0.05)},Rule,,0,0,0,,{{\\pos(0,140)\\an7\\1c&H0A0C10&\\1a&H68&"
+                      f"\\blur45\\fad(300,250)\\p1}}m 0 0 l 1080 0 1080 330 0 330{{\\p0}}")
+            ev.append(f"Dialogue: 2,{ts(start+0.1)},{ts(start+dur-0.05)},Note,,0,0,0,,"
+                      r"{\fad(350,250)\blur0.4\fscx96\fscy96\t(0,600,\fscx100\fscy100)}" + s["note"])
+        if s.get("title") or s.get("endcard"):
+            a, b = start + 0.25, start + dur - (0.15 if s.get("title") else 0.0)
+            y = 760 if s.get("title") else 820
+            f = r"{\fad(450,350)\blur0.6" + "}"
+            # soft dark band so the serif title reads on any background
+            ev.append(f"Dialogue: 0,{ts(a-0.1)},{ts(b)},Rule,,0,0,0,,{{\\pos(0,{y-200})\\an7\\1c&H0A0C10&\\1a&H70&\\blur40\\fad(400,350)\\p1}}m 0 0 l 1080 0 1080 470 0 470{{\\p0}}")
+            rise = lambda y0: rf"\move(540,{y0+18},540,{y0},0,600)"
             ev.append(f"Dialogue: 2,{ts(a)},{ts(b)},Title,,0,0,0,,{{{rise(y)}}}{f}Coffee with Kirti")
-            # gold rule draws itself left-to-right
-            ev.append(f"Dialogue: 2,{ts(a+0.15)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(250,200)\\fscx0\\t(0,450,\\fscx100)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
-            ev.append(f"Dialogue: 2,{ts(a+0.3)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}Episode 4")
-        if s.get("flash"):  # soft white flash, like a camera blink, on scene changes
-            ev.append(f"Dialogue: 6,{ts(start)},{ts(start+0.22)},Flash,,0,0,0,,{{\\pos(0,0)\\1a&H30&\\fad(0,200)\\p1}}m 0 0 l {W} 0 {W} {H} 0 {H}{{\\p0}}")
-        if s.get("endcard"):
-            ev.append(f"Dialogue: 3,{ts(start+0.35)},{ts(end)},Card,,0,0,0,,{{\\pos(560,1236)\\frz3\\fad(400,0)}}ep. 04 · tan coffee")
-            ev.append(f"Dialogue: 3,{ts(start+0.55)},{ts(end)},Title,,0,0,0,,{{\\pos(540,1395)\\fs112\\fad(300,0)\\fscx90\\fscy90\\t(0,400,\\fscx100\\fscy100)}}Coffee with Kirti")
-            ev += box(5, start + 0.95, end, 540, 1510, "tag the friend you'd sit on the road with", size=40, rot=-2)
-    # small series badge, top-left, after the cold open
-    b0 = timeline[1][0]
-    ev.append(f"Dialogue: 2,{ts(b0)},{ts(total-3.4)},Box,,0,0,0,,{{\\an7\\pos(60,215)\\1c&H000000&\\1a&H90&\\fad(300,300)\\p1}}{rrect(text_w('Inter ExtraBold', 30, 'COFFEE WITH KIRTI · EP 04') + 58, 52, 26)}{{\\p0}}")
-    ev.append(f"Dialogue: 3,{ts(b0)},{ts(total-3.4)},Badge,,0,0,0,,{{\\an7\\pos(84,226)\\fad(300,300)}}COFFEE WITH KIRTI · EP 04")
+            ev.append(f"Dialogue: 2,{ts(a+0.25)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(450,350)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
+            sub = "Episode 4" if s.get("title") else "see you at the next table"
+            ev.append(f"Dialogue: 2,{ts(a+0.35)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}{sub}")
     return head + "\n".join(ev) + "\n"
 
 
-def sfx(timeline, total, path, sr=48000):
-    """Small synthesised accents: whoosh into new scenes, pop on stickers/punch-ins."""
-    rng = np.random.default_rng(7)
-    out = np.zeros(int((total + 1) * sr))
-
-    def put(x, at):
-        i = int(at * sr)
-        j = min(i + len(x), len(out))
-        if i < len(out):
-            out[i:j] += x[:j-i]
-
-    t = lambda d: np.arange(int(d * sr)) / sr
-    def whoosh():
-        x = t(0.45); n = rng.standard_normal(len(x))
-        # band of noise swept upward, smoothed by a moving average that shrinks over time
-        env = np.sin(np.pi * x / 0.45) ** 2
-        k = np.convolve(n, np.ones(24) / 24, "same") * (1 - x / 0.45) + np.diff(n, prepend=0) * 0.15 * (x / 0.45)
-        return k * env * 0.5
-    def pop():
-        x = t(0.12)
-        return np.sin(2 * np.pi * (900 - 2500 * x) * x) * np.exp(-x * 45) * 0.45
-    def shutter():
-        x = t(0.16); n = rng.standard_normal(len(x))
-        clicks = np.exp(-x * 120) + 0.7 * np.exp(-np.clip(x - 0.07, 0, None) * 140) * (x > 0.07)
-        return np.diff(n, prepend=0) * clicks * 0.6
-
-    def ding():
-        x = t(0.7)
-        return (np.sin(2*np.pi*1568*x) + 0.4*np.sin(2*np.pi*2349*x)) * np.exp(-x * 7) * 0.18
-
-    for start, dur, s in timeline:
-        if s.get("sfx") == "whoosh":
-            put(whoosh(), max(start - 0.2, 0))
-        if s.get("sfx") == "shutter":
-            put(shutter(), start)
-        if "punch" in s:
-            put(pop() * 0.5, start + s["punch"] - s["a"])
-        if "sticker" in s:
-            put(ding(), start + s["sticker"][0] - s["a"])
-    out /= max(np.abs(out).max(), 1e-9)
-    with wave.open(path, "wb") as wf:
-        wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(sr)
-        wf.writeframes((out * 0.7 * 32767).astype(np.int16).tobytes())
-
-
-def music(dur, path, sr=48000, bpm=100):
+def music(dur, path, sr=48000, bpm=84):
     """Original warm lo-fi bed (synthesised here, so it's free to publish)."""
     rng = np.random.default_rng(4)
     n = int(dur * sr) + sr
@@ -334,7 +187,7 @@ def music(dur, path, sr=48000, bpm=100):
         add(note(hz(m := notes[1] + 12), beat*1.5, 0.035, pan=0.3), t + beat*2.5)
         add(note(hz(root), beat*1.8, 0.22, kind="bass"), t)
         add(note(hz(root + 7), beat*1.2, 0.15, kind="bass"), t + beat*2.5)
-        if k >= 1:  # playful top line
+        if k >= 2 and k % 2 == 0:  # little playful top line
             for q in range(4):
                 add(note(hz(melody[(k + q) % 8]), beat*0.9, 0.03, pan=-0.3), t + beat*(q + 0.5))
         for b in range(4):  # soft kick + brushed shaker
@@ -378,30 +231,31 @@ def main():
         fh.write(build_ass(timeline))
     bed = os.path.join(BUILD, "music.wav")
     music(total, bed)
-    fx = os.path.join(BUILD, "sfx.wav")
-    sfx(timeline, total, fx)
     final = os.path.join(HERE, "Coffee_with_Kirti_Ep04.mp4")
-    # Dialogue clean-up: cut rumble/hiss, strip cafe noise, tame the room boom that
-    # reads as echo, close the gaps between words, then lift and level the voices.
-    voice = ("highpass=f=120,lowpass=f=8500,afftdn=nr=20:nf=-30:tn=1,"
-             "equalizer=f=220:t=q:w=1.2:g=-4,equalizer=f=500:t=q:w=1.5:g=-2,"
-             "agate=threshold=0.015:ratio=3:attack=4:release=140:range=0.25,"
-             "equalizer=f=3200:t=q:w=1:g=4,equalizer=f=6500:t=q:w=1:g=1.5,deesser,"
-             "speechnorm=e=8:r=0.0001:l=1,"
-             "acompressor=threshold=-20dB:ratio=4:attack=5:release=120:makeup=4")
-    fc = (f"[0:v]subtitles={ass}:fontsdir={FONTS},fade=t=out:st={total-0.4:.2f}:d=0.4[v];"
-          f"[0:a]{voice},asplit[dia][key];"
-          "[1:a]lowpass=f=7000,volume=1.1[mus];"
-          "[mus][key]sidechaincompress=threshold=0.02:ratio=10:attack=20:release=350[duck];"
-          "[2:a]aformat=channel_layouts=stereo,volume=0.5[fx];"
-          "[dia][duck][fx]amix=inputs=3:normalize=0,loudnorm=I=-12:TP=-2:LRA=7,alimiter=limit=0.79:level=0,"
-          f"afade=t=out:st={total-0.8:.2f}:d=0.8[a]")
-    run(["ffmpeg", "-v", "error", "-y", "-i", cut, "-i", bed, "-i", fx, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
+    # wavy pop-colour ribbons, each a PNG sequence overlaid at its segment's start time
+    rib_inputs, rib_chain, label = [], "", "sub"
+    for k, (start, dur, s) in enumerate(t for t in timeline if "ribbons" in t[2]):
+        d = os.path.join(BUILD, f"ribbon{k}")
+        ribbon.render(d, dur, s["ribbons"])
+        rib_inputs += ["-itsoffset", f"{start:.3f}", "-framerate", str(FPS), "-i", os.path.join(d, "%04d.png")]
+        rib_chain += f"[{label}][{k+2}:v]overlay=0:{s['ribbon_y']}:eof_action=pass[r{k}];"
+        label = f"r{k}"
+    fc = (f"[0:v]subtitles={ass}:fontsdir={FONTS}[sub];{rib_chain}"
+          f"[{label}]fade=t=out:st={total-0.6:.2f}:d=0.6[v];"
+          f"[0:a]highpass=f=100,arnndn=m={RNNOISE}:mix=0.9,afftdn=nr=12:nf=-35:tn=1,lowpass=f=9000,"
+          "equalizer=f=220:t=q:w=1.2:g=-3,speechnorm=e=6:r=0.0001:l=1,"
+          "acompressor=threshold=-22dB:ratio=3:attack=8:release=180:makeup=4,"
+          "equalizer=f=3000:t=q:w=1:g=2.5,asplit[dia][key];"
+          f"[1:a]lowpass=f=5200,volume=1.3[mus];"
+          "[mus][key]sidechaincompress=threshold=0.03:ratio=7:attack=40:release=450[duck];"
+          f"[dia][duck]amix=inputs=2:normalize=0,loudnorm=I=-13:TP=-2:LRA=8,alimiter=limit=0.79:level=0,"
+          f"afade=t=out:st={total-1.2:.2f}:d=1.2[a]")
+    run(["ffmpeg", "-v", "error", "-y", "-i", cut, "-i", bed, *rib_inputs, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
          "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", final])
-    from cover import make_cover  # pastel collage cover with real cut-outs
-    make_cover(os.path.join(HERE, "Coffee_with_Kirti_Ep04_cover.jpg"))
     print(f"rendered {final} ({total:.1f}s)")
+    from cover import make_cover
+    make_cover(os.path.join(HERE, "Coffee_with_Kirti_Ep04_cover.jpg"))
 
 
 if __name__ == "__main__":
