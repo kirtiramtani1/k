@@ -26,13 +26,17 @@ FINISH = ("curves=r='0/0.05 0.5/0.52 1/0.96':g='0/0.045 0.5/0.5 1/0.95':b='0/0.0
 # Edit decision list. Captions use source-clip times; **word** = highlight.
 # gain: dialogue level (b-roll is ducked so the music carries it).
 # punch: source time of a quick punch-in; hook/sticker: on-screen text; sfx: sound accent.
+HOOK = ("2 GIRLS. 1 JAR.", "0 CHANCE.")
+
 EDL = [
-    # cold open - the laugh + the line that makes you ask "wait, why?"
-    dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, headline=("FRESH HAIRCUTS.", "ZERO PLANS."),
-         caps=[(10.4, 12.36, "we're sitting on the **ROAD**")]),
+    # cold open - flash-forward to the jar defeat, then rewind to how the night started
+    dict(src="v3", a=11.9, b=14.1, zoom=1.04, punch=12.3, headline=HOOK,
+         caps=[(12.24, 14.1, "nobody can even **open** this")]),
     # title over the first dessert jar
     dict(src="v2", a=0.6, b=2.7, gain=0.35, title=True, sfx="whoosh", flash=True),
-    dict(src="v1", a=0.0, b=2.3, section="location: the road", caps=[(0.0, 2.3, "no idea where we've ended up")]),
+    dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, section="location: the road",
+         caps=[(10.4, 12.36, "we're sitting on the **ROAD**")]),
+    dict(src="v1", a=0.0, b=2.3, caps=[(0.0, 2.3, "no idea where we've ended up")]),
     dict(src="v1", a=3.9, b=9.0, punch=6.6, caps=[
         (3.98, 5.88, "sitting on the road"),
         (5.88, 9.0, "after getting haircuts like **THIS**")]),
@@ -245,25 +249,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return head + "\n".join(ev) + "\n"
 
 
-def cover(still_seg, path):
-    """Grid/cover image: the polaroid moment with the episode's headline."""
-    ass = os.path.join(BUILD, "cover.ass")
-    lines = [
-        f"Dialogue: 2,0:00:00.00,0:00:05.00,Rule,,0,0,0,,{{\\pos(0,180)\\an7\\1c&H0A0C10&\\1a&H60&\\blur50\\p1}}m 0 0 l 1080 0 1080 380 0 380{{\\p0}}",
-        f"Dialogue: 5,0:00:00.00,0:00:05.00,Head,,0,0,0,,{{\\an5\\pos(540,300)\\frz3}}FRESH HAIRCUTS.",
-        f"Dialogue: 5,0:00:00.00,0:00:05.00,Head,,0,0,0,,{{\\an5\\pos(540,445)\\frz-2}}ZERO PLANS.",
-        f"Dialogue: 3,0:00:00.00,0:00:05.00,Card,,0,0,0,,{{\\pos(560,1236)\\frz3}}ep. 04 · tan coffee",
-        f"Dialogue: 3,0:00:00.00,0:00:05.00,Title,,0,0,0,,{{\\pos(540,1395)\\fs112}}Coffee with Kirti",
-    ] + box(5, 0, 5, 540, 1510, "Episode 4  |  Tan Coffee", size=44, anim="none")
-    full = build_ass([(0, 1.0, {"a": 0}), (1.0, 1.0, {"a": 0})])
-    with open(ass, "w") as fh:
-        fh.write(full.split("[Events]")[0] + "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-                 + "\n".join(l.replace("\\fscx70\\fscy70\\t(0,140,\\fscx106\\fscy106)\\t(140,240,\\fscx100\\fscy100)\\fad(0,160)", "")
-                             for l in lines) + "\n")
-    run(["ffmpeg", "-v", "error", "-y", "-ss", "2.0", "-i", still_seg, "-frames:v", "1",
-         "-vf", f"subtitles={ass}:fontsdir={FONTS}", "-q:v", "2", path])
-
-
 def sfx(timeline, total, path, sr=48000):
     """Small synthesised accents: whoosh into new scenes, pop on stickers/punch-ins."""
     rng = np.random.default_rng(7)
@@ -414,7 +399,8 @@ def main():
     run(["ffmpeg", "-v", "error", "-y", "-i", cut, "-i", bed, "-i", fx, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
          "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", final])
-    cover(files[-1], os.path.join(HERE, "Coffee_with_Kirti_Ep04_cover.jpg"))
+    from cover import make_cover  # pastel collage cover with real cut-outs
+    make_cover(os.path.join(HERE, "Coffee_with_Kirti_Ep04_cover.jpg"))
     print(f"rendered {final} ({total:.1f}s)")
 
 

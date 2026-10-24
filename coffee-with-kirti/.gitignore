@@ -1,3 +1,4 @@
 footage/
 episode-*/build/
 *.mp4
+models/
