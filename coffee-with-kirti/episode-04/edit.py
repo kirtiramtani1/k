@@ -25,34 +25,33 @@ FINISH = ("curves=all='0/0.03 0.25/0.22 0.5/0.5 0.75/0.79 1/0.97',"
 
 # Edit decision list. Captions use source-clip times; **word** = highlight.
 # gain: dialogue level (b-roll is ducked so the music carries it).
+# punch: source time of a quick punch-in; hook/sticker: on-screen text; sfx: sound accent.
 EDL = [
     # cold open - the laugh + the line that makes you ask "wait, why?"
-    dict(src="v1", a=8.9, b=12.4, zoom=1.12, caps=[(10.4, 12.36, "we're sitting on the **road**")]),
+    dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, hook="POV: fresh haircuts, zero plans",
+         caps=[(10.4, 12.36, "we're sitting on the **ROAD**")]),
     # title over the first dessert jar
-    dict(src="v2", a=0.0, b=3.6, zoom=1.0, gain=0.35, title=True),
-    dict(src="v1", a=0.0, b=9.0, zoom=1.0, caps=[
-        (0.0, 2.3, "no idea where we've ended up"),
+    dict(src="v2", a=0.6, b=2.7, gain=0.35, title=True, sfx="whoosh"),
+    dict(src="v1", a=0.0, b=2.3, caps=[(0.0, 2.3, "no idea where we've ended up")]),
+    dict(src="v1", a=3.9, b=9.0, punch=6.6, caps=[
         (3.98, 5.88, "sitting on the road"),
-        (5.88, 9.0, "after getting haircuts like **this**")]),
+        (5.88, 9.0, "after getting haircuts like **THIS**")]),
     dict(src="v1", a=12.3, b=14.6, zoom=1.1, caps=[(12.36, 14.6, "haan, **piyenge** yaar!")]),
-    dict(src="v2", a=14.0, b=16.4, zoom=1.0, caps=[(14.8, 16.3, "let's taste it")]),
-    dict(src="v2", a=19.0, b=21.4, zoom=1.0, gain=0.3),
-    dict(src="v2", a=4.2, b=8.1, zoom=1.0, caps=[(6.14, 8.1, "this is **nice**, guys")]),
-    dict(src="v2", a=9.0, b=12.6, zoom=1.06, caps=[(9.02, 11.6, "now... the **first bite**")]),
-    dict(src="v2", a=22.0, b=26.0, zoom=1.0, gain=0.25),
-    dict(src="v2", a=27.9, b=29.9, zoom=1.0, caps=[(28.22, 29.9, "how is it?")]),
-    dict(src="v2", a=29.9, b=32.1, zoom=1.14, caps=[(29.94, 31.0, "**very tasty**"), (31.1, 32.1, "it IS tasty")]),
-    dict(src="v2", a=36.7, b=38.0, zoom=1.0, caps=[(36.88, 38.0, "so, **Kirti?**")]),
-    dict(src="v2", a=40.2, b=43.0, zoom=1.0, gain=0.25),
-    dict(src="v2", a=45.9, b=48.9, zoom=1.0, caps=[(46.4, 48.4, "it's **very tasty**")]),
+    dict(src="v2", a=19.3, b=21.0, gain=0.3, sfx="whoosh", hook="next stop: Tan Coffee"),
+    dict(src="v2", a=6.0, b=8.1, caps=[(6.14, 8.1, "this is **nice**, guys")]),
+    dict(src="v2", a=9.0, b=11.6, punch=10.4, caps=[(9.02, 11.6, "now... the **first bite**")]),
+    dict(src="v2", a=23.0, b=25.0, gain=0.25),
+    dict(src="v2", a=28.1, b=32.1, punch=29.94, sticker=(29.95, "taste test: PASSED"),
+         caps=[(28.22, 29.9, "how is it?"), (29.94, 31.0, "**very tasty**"), (31.1, 32.1, "it IS tasty")]),
+    dict(src="v2", a=36.7, b=38.0, caps=[(36.88, 38.0, "so, **Kirti?**")]),
+    dict(src="v2", a=46.2, b=48.6, punch=46.5, caps=[(46.4, 48.4, "it's **very tasty**")]),
     # the jar that would not open
-    dict(src="v3", a=7.7, b=11.0, zoom=1.0, caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
-    dict(src="v3", a=12.0, b=14.1, zoom=1.15, caps=[(12.24, 14.1, "nobody can even **open** this")]),
-    # sign-off
-    dict(src="v2", a=32.6, b=35.6, zoom=1.0, caps=[(32.76, 34.8, "so you should come to **Tan Coffee** again"), (34.86, 35.6, "again!")]),
-    # tag: the night continued with noodles
-    dict(src="i1", dur=2.2, caps=[(0.15, 2.1, "...and then, **noodles**")]),
-    dict(src="i3", dur=3.6, endcard=True),
+    dict(src="v3", a=7.8, b=11.0, caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
+    dict(src="v3", a=12.0, b=14.1, punch=12.3, sticker=(12.9, "jar 1 – us 0"),
+         caps=[(12.24, 14.1, "nobody can even **open** this")]),
+    # sign-off, then freeze on the two of you laughing
+    dict(src="v2", a=32.6, b=35.6, punch=34.86, caps=[(32.76, 34.8, "so you should come to **Tan Coffee** again"), (34.86, 35.6, "**again!**")]),
+    dict(src="v1", a=2.3, b=3.05, zoom=1.05, freeze=3.2, endcard=True, sfx="pop"),
 ]
 
 
@@ -62,30 +61,28 @@ def run(cmd):
 
 def seg_video(i, s):
     out = os.path.join(BUILD, f"seg{i:02d}.mp4")
-    if os.environ.get("REUSE_SEGMENTS") and os.path.exists(out):
-        d = s["dur"] if "dur" in s else s["b"] - s["a"]
-        return out, round(d * FPS) / FPS
-    z = s.get("zoom", 1.0)
-    fit = f"scale={int(W*z)}:{int(H*z)}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H}"
-    if s["src"].startswith("i"):
-        d = s["dur"]
-        n = int(d * FPS)
-        vf = (f"scale=2160:-2:flags=lanczos,zoompan=z='1.0+0.06*on/{n}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2'"
-              f":d={n}:s={W}x{H}:fps={FPS},{GRADE['img']},{FINISH},format=yuv420p")
-        run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(d), "-i", os.path.join(SRC, s["src"] + ".jpg"),
-             "-f", "lavfi", "-t", str(d), "-i", "anullsrc=r=48000:cl=stereo",
-             "-vf", vf, "-frames:v", str(n), "-c:v", "libx264", "-crf", "16", "-preset", "medium",
-             "-c:a", "pcm_s16le", "-shortest", out])
-        return out, n / FPS
     d = s["b"] - s["a"]
+    frz = s.get("freeze", 0.0)
+    n = round(d * FPS) + round(frz * FPS)
+    if os.environ.get("REUSE_SEGMENTS") and os.path.exists(out):
+        return out, n / FPS
+    z = s.get("zoom", 1.0)
+    # gentle push-in across every shot + an eased snap punch-in on the funny beat
+    zexpr = f"{z}+0.035*in/{round(d*FPS)}"
+    if "punch" in s:
+        p = round((s["punch"] - s["a"]) * FPS)
+        zexpr += f"+0.14*min(1,max(0,(in-{p})/4))"
+    fit = f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H}"
+    zoom = (f"zoompan=z='{zexpr}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s={W}x{H}:fps={FPS}")
+    pad = f",tpad=stop_mode=clone:stop_duration={frz}" if frz else ""
     g = s.get("gain", 1.0)
-    vf = (f"fps={FPS},hqdn3d=2:2:4:4,{fit},unsharp=5:5:0.6,{GRADE[s['src']]},{FINISH},format=yuv420p")
-    af = (f"aresample=48000,aformat=channel_layouts=stereo,highpass=f=90,volume={g},"
-          f"afade=t=in:d=0.03,afade=t=out:st={d-0.04:.3f}:d=0.04")
+    vf = f"fps={FPS},hqdn3d=2:2:4:4,{fit},{zoom}{pad},unsharp=5:5:0.6,{GRADE[s['src']]},{FINISH},format=yuv420p"
+    af = (f"aresample=48000,aformat=channel_layouts=stereo,volume={g},"
+          f"afade=t=in:d=0.03,afade=t=out:st={d-0.04:.3f}:d=0.04,apad=whole_dur={n/FPS:.3f}")
     run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["a"]), "-t", f"{d:.3f}", "-i", os.path.join(SRC, s["src"] + ".mp4"),
-         "-vf", vf, "-af", af, "-frames:v", str(round(d * FPS)), "-c:v", "libx264", "-crf", "16", "-preset", "medium",
-         "-c:a", "pcm_s16le", out])
-    return out, round(d * FPS) / FPS
+         "-vf", vf, "-af", af, "-frames:v", str(n), "-c:v", "libx264", "-crf", "16", "-preset", "medium",
+         "-c:a", "pcm_s16le", "-t", f"{n/FPS:.3f}", out])
+    return out, n / FPS
 
 
 def ts(t):
@@ -110,7 +107,9 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,Inter SemiBold,68,&H00FFFFFF,&H00FFFFFF,&H8C0E1218,&H00000000,0,0,0,0,100,100,0.3,0,3,16,0,2,110,110,430,1
+Style: Cap,Inter ExtraBold,76,&H00FFFFFF,&H00FFFFFF,&H00141018,&H96000000,0,0,0,0,100,100,0,0,1,6,3,2,100,100,440,1
+Style: Hook,Inter ExtraBold,68,&H00181410,&H00FFFFFF,&H00F4F8FB,&H00000000,0,0,0,0,100,100,0,0,3,18,0,8,90,90,290,1
+Style: Sticker,Inter ExtraBold,62,&H00181410,&H00FFFFFF,&H006BC6FF,&H00000000,0,0,0,0,100,100,0,0,3,16,0,5,0,0,0,1
 Style: Title,Cormorant Garamond SemiBold,128,&H00F3F7FB,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,1,0,1,0,4,5,60,60,0,1
 Style: Sub,Cormorant Garamond Medium Italic,66,&H00A9D3EE,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,6,0,1,0,3,5,60,60,0,1
 Style: Rule,Inter,10,&H00A9D3EE,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
@@ -119,29 +118,79 @@ Style: Rule,Inter,10,&H00A9D3EE,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ev = []
-    pop = r"{\fad(90,110)\fscx94\fscy94\t(0,140,\fscx100\fscy100)}"
+    pop = r"{\fad(60,90)\fscx80\fscy80\t(0,90,\fscx108\fscy108)\t(90,170,\fscx100\fscy100)}"
+    sticker = r"\fscx0\fscy0\t(0,120,\fscx118\fscy118)\t(120,220,\fscx100\fscy100)\fad(0,150)"
+    band = lambda t0, t1, y: (f"Dialogue: 0,{ts(t0)},{ts(t1)},Rule,,0,0,0,,{{\\pos(0,{y})\\an7\\1c&H0A0C10&\\1a&H70&"
+                              f"\\blur40\\fad(300,300)\\p1}}m 0 0 l 1080 0 1080 470 0 470{{\\p0}}")
+    rel = lambda start, s, x: start + x - s["a"]
     for start, dur, s in timeline:
+        end = start + dur
         for (ca, cb, txt) in s.get("caps", []):
-            if "dur" in s:
-                t0, t1 = start + ca, start + cb
-            else:
-                t0, t1 = start + max(ca - s["a"], 0), start + min(cb - s["a"], dur)
+            t0, t1 = max(rel(start, s, ca), start), min(rel(start, s, cb), end)
             ev.append(f"Dialogue: 1,{ts(t0)},{ts(t1)},Cap,,0,0,0,,{pop}{ass_text(txt)}")
-        if s.get("title") or s.get("endcard"):
-            a, b = start + 0.25, start + dur - (0.15 if s.get("title") else 0.0)
-            y = 760 if s.get("title") else 820
-            f = r"{\fad(450,350)\blur0.6" + "}"
-            # soft dark band so the serif title reads on any background
-            ev.append(f"Dialogue: 0,{ts(a-0.1)},{ts(b)},Rule,,0,0,0,,{{\\pos(0,{y-200})\\an7\\1c&H0A0C10&\\1a&H70&\\blur40\\fad(400,350)\\p1}}m 0 0 l 1080 0 1080 470 0 470{{\\p0}}")
-            rise = lambda y0: rf"\move(540,{y0+18},540,{y0},0,600)"
+        if "hook" in s:
+            ev.append(f"Dialogue: 3,{ts(start)},{ts(end)},Hook,,0,0,0,,{{\\fad(0,120)\\fscx85\\fscy85\\t(0,120,\\fscx100\\fscy100)}}{s['hook']}")
+        if "sticker" in s:
+            st, txt = s["sticker"]
+            ev.append(f"Dialogue: 3,{ts(rel(start, s, st))},{ts(end)},Sticker,,0,0,0,,{{\\pos(740,600)\\frz7{sticker}}}{txt}")
+        if s.get("title"):
+            a, b, y = start + 0.1, end - 0.05, 760
+            ev.append(band(a - 0.05, b, y - 200))
+            rise = lambda y0: rf"\move(540,{y0+18},540,{y0},0,400)"
+            f = r"{\fad(250,200)\blur0.6}"
             ev.append(f"Dialogue: 2,{ts(a)},{ts(b)},Title,,0,0,0,,{{{rise(y)}}}{f}Coffee with Kirti")
-            ev.append(f"Dialogue: 2,{ts(a+0.25)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(450,350)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
-            sub = "Episode 4" if s.get("title") else "see you at the next table"
-            ev.append(f"Dialogue: 2,{ts(a+0.35)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}{sub}")
+            ev.append(f"Dialogue: 2,{ts(a+0.15)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(250,200)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
+            ev.append(f"Dialogue: 2,{ts(a+0.2)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}Episode 4")
+        if s.get("endcard"):
+            fz = end - s["freeze"]  # freeze-frame starts here
+            ev.append(f"Dialogue: 3,{ts(fz+0.05)},{ts(end)},Hook,,0,0,0,,{{{sticker}}}tag the friend you'd sit on the road with")
+            ev.append(band(fz + 0.4, end, 1180))
+            ev.append(f"Dialogue: 2,{ts(fz+0.5)},{ts(end)},Title,,0,0,0,,{{\\pos(540,1380)\\fad(250,0)}}Coffee with Kirti")
+            ev.append(f"Dialogue: 2,{ts(fz+0.7)},{ts(end)},Sub,,0,0,0,,{{\\pos(540,1500)\\fad(250,0)}}see you in episode 5")
     return head + "\n".join(ev) + "\n"
 
 
-def music(dur, path, sr=48000, bpm=84):
+def sfx(timeline, total, path, sr=48000):
+    """Small synthesised accents: whoosh into new scenes, pop on stickers/punch-ins."""
+    rng = np.random.default_rng(7)
+    out = np.zeros(int((total + 1) * sr))
+
+    def put(x, at):
+        i = int(at * sr)
+        j = min(i + len(x), len(out))
+        if i < len(out):
+            out[i:j] += x[:j-i]
+
+    t = lambda d: np.arange(int(d * sr)) / sr
+    def whoosh():
+        x = t(0.45); n = rng.standard_normal(len(x))
+        # band of noise swept upward, smoothed by a moving average that shrinks over time
+        env = np.sin(np.pi * x / 0.45) ** 2
+        k = np.convolve(n, np.ones(24) / 24, "same") * (1 - x / 0.45) + np.diff(n, prepend=0) * 0.15 * (x / 0.45)
+        return k * env * 0.5
+    def pop():
+        x = t(0.12)
+        return np.sin(2 * np.pi * (900 - 2500 * x) * x) * np.exp(-x * 45) * 0.45
+    def ding():
+        x = t(0.7)
+        return (np.sin(2*np.pi*1568*x) + 0.4*np.sin(2*np.pi*2349*x)) * np.exp(-x * 7) * 0.18
+
+    for start, dur, s in timeline:
+        if s.get("sfx") == "whoosh":
+            put(whoosh(), max(start - 0.2, 0))
+        if s.get("sfx") == "pop":
+            put(pop(), start + dur - s["freeze"])
+        if "punch" in s:
+            put(pop() * 0.5, start + s["punch"] - s["a"])
+        if "sticker" in s:
+            put(ding(), start + s["sticker"][0] - s["a"])
+    out /= max(np.abs(out).max(), 1e-9)
+    with wave.open(path, "wb") as wf:
+        wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(sr)
+        wf.writeframes((out * 0.7 * 32767).astype(np.int16).tobytes())
+
+
+def music(dur, path, sr=48000, bpm=100):
     """Original warm lo-fi bed (synthesised here, so it's free to publish)."""
     rng = np.random.default_rng(4)
     n = int(dur * sr) + sr
@@ -181,7 +230,7 @@ def music(dur, path, sr=48000, bpm=84):
         add(note(hz(m := notes[1] + 12), beat*1.5, 0.035, pan=0.3), t + beat*2.5)
         add(note(hz(root), beat*1.8, 0.22, kind="bass"), t)
         add(note(hz(root + 7), beat*1.2, 0.15, kind="bass"), t + beat*2.5)
-        if k >= 2 and k % 2 == 0:  # little playful top line
+        if k >= 1:  # playful top line
             for q in range(4):
                 add(note(hz(melody[(k + q) % 8]), beat*0.9, 0.03, pan=-0.3), t + beat*(q + 0.5))
         for b in range(4):  # soft kick + brushed shaker
@@ -225,15 +274,25 @@ def main():
         fh.write(build_ass(timeline))
     bed = os.path.join(BUILD, "music.wav")
     music(total, bed)
+    fx = os.path.join(BUILD, "sfx.wav")
+    sfx(timeline, total, fx)
     final = os.path.join(HERE, "Coffee_with_Kirti_Ep04.mp4")
-    fc = (f"[0:v]subtitles={ass}:fontsdir={FONTS},fade=t=out:st={total-0.6:.2f}:d=0.6[v];"
-          "[0:a]afftdn=nf=-28,acompressor=threshold=-22dB:ratio=3:attack=8:release=180:makeup=3,"
-          "equalizer=f=3000:t=q:w=1:g=2,asplit[dia][key];"
-          f"[1:a]lowpass=f=5200,aecho=0.8:0.6:60:0.18,volume=1.5[mus];"
-          "[mus][key]sidechaincompress=threshold=0.03:ratio=7:attack=40:release=450[duck];"
-          f"[dia][duck]amix=inputs=2:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=9,"
-          f"afade=t=out:st={total-1.2:.2f}:d=1.2[a]")
-    run(["ffmpeg", "-v", "error", "-y", "-i", cut, "-i", bed, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
+    # Dialogue clean-up: cut rumble/hiss, strip cafe noise, tame the room boom that
+    # reads as echo, close the gaps between words, then lift and level the voices.
+    voice = ("highpass=f=120,lowpass=f=8500,afftdn=nr=20:nf=-30:tn=1,"
+             "equalizer=f=220:t=q:w=1.2:g=-4,equalizer=f=500:t=q:w=1.5:g=-2,"
+             "agate=threshold=0.015:ratio=3:attack=4:release=140:range=0.25,"
+             "equalizer=f=3200:t=q:w=1:g=4,equalizer=f=6500:t=q:w=1:g=1.5,deesser,"
+             "speechnorm=e=8:r=0.0001:l=1,"
+             "acompressor=threshold=-20dB:ratio=4:attack=5:release=120:makeup=4")
+    fc = (f"[0:v]subtitles={ass}:fontsdir={FONTS},fade=t=out:st={total-0.4:.2f}:d=0.4[v];"
+          f"[0:a]{voice},asplit[dia][key];"
+          "[1:a]lowpass=f=7000,volume=1.1[mus];"
+          "[mus][key]sidechaincompress=threshold=0.02:ratio=10:attack=20:release=350[duck];"
+          "[2:a]aformat=channel_layouts=stereo,volume=0.5[fx];"
+          "[dia][duck][fx]amix=inputs=3:normalize=0,loudnorm=I=-12:TP=-2:LRA=7,alimiter=limit=0.79:level=0,"
+          f"afade=t=out:st={total-0.8:.2f}:d=0.8[a]")
+    run(["ffmpeg", "-v", "error", "-y", "-i", cut, "-i", bed, "-i", fx, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
          "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", final])
     print(f"rendered {final} ({total:.1f}s)")
