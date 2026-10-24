@@ -12,16 +12,16 @@ BUILD = os.path.join(HERE, "build")
 W, H, FPS = 1080, 1920, 30
 
 # Per-source grade: neutralise the night-street blue (v1) and the heavy
-# tungsten orange of the cafe (v2/v3), then one shared warm "coffee" finish.
+# tungsten yellow of the cafe (v2/v3), then one shared creamy "latte" finish:
+# soft matte blacks, rolled-off highlights, gentle yellows, warm mids.
 GRADE = {
-    "v1": "colortemperature=temperature=5200:mix=0.6,eq=brightness=0.045:gamma=1.1",
-    "v2": "colortemperature=temperature=7600:mix=0.55,eq=saturation=0.86",
-    "v3": "colortemperature=temperature=7200:mix=0.45,eq=saturation=0.9",
-    "img": "eq=saturation=0.95",
+    "v1": "hqdn3d=4:3:6:6,colortemperature=temperature=5600:mix=0.6,eq=brightness=0.06:gamma=1.15:saturation=0.95,colorbalance=gs=-0.05:gm=-0.04:gh=-0.02",
+    "v2": "colortemperature=temperature=9000:mix=0.7,eq=saturation=0.82:gamma=1.04",
+    "v3": "colortemperature=temperature=8600:mix=0.65,eq=saturation=0.85",
 }
-FINISH = ("curves=all='0/0.03 0.25/0.22 0.5/0.5 0.75/0.79 1/0.97',"
-          "colorbalance=rs=0.02:bs=-0.03:rh=0.03:gh=0.01:bh=-0.03,"
-          "vibrance=intensity=0.08,vignette=angle=0.35")
+FINISH = ("curves=r='0/0.05 0.5/0.52 1/0.96':g='0/0.045 0.5/0.5 1/0.95':b='0/0.06 0.5/0.47 1/0.9',"
+          "selectivecolor=yellows='-0.1 0 0.15 0':reds='0 0.03 0.05 0':neutrals='0 0 0.03 0',"
+          "eq=contrast=1.04:saturation=0.92,vignette=angle=0.3")
 
 # Edit decision list. Captions use source-clip times; **word** = highlight.
 # gain: dialogue level (b-roll is ducked so the music carries it).
@@ -31,13 +31,13 @@ EDL = [
     dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, hook="POV: fresh haircuts, zero plans",
          caps=[(10.4, 12.36, "we're sitting on the **ROAD**")]),
     # title over the first dessert jar
-    dict(src="v2", a=0.6, b=2.7, gain=0.35, title=True, sfx="whoosh"),
-    dict(src="v1", a=0.0, b=2.3, caps=[(0.0, 2.3, "no idea where we've ended up")]),
+    dict(src="v2", a=0.6, b=2.7, gain=0.35, title=True, sfx="whoosh", flash=True),
+    dict(src="v1", a=0.0, b=2.3, chapter=("01", "the road"), caps=[(0.0, 2.3, "no idea where we've ended up")]),
     dict(src="v1", a=3.9, b=9.0, punch=6.6, caps=[
         (3.98, 5.88, "sitting on the road"),
         (5.88, 9.0, "after getting haircuts like **THIS**")]),
     dict(src="v1", a=12.3, b=14.6, zoom=1.1, caps=[(12.36, 14.6, "haan, **piyenge** yaar!")]),
-    dict(src="v2", a=19.3, b=21.0, gain=0.3, sfx="whoosh", hook="next stop: Tan Coffee"),
+    dict(src="v2", a=19.3, b=21.0, gain=0.3, sfx="whoosh", flash=True, chapter=("02", "tan coffee")),
     dict(src="v2", a=6.0, b=8.1, caps=[(6.14, 8.1, "this is **nice**, guys")]),
     dict(src="v2", a=9.0, b=11.6, punch=10.4, caps=[(9.02, 11.6, "now... the **first bite**")]),
     dict(src="v2", a=23.0, b=25.0, gain=0.25),
@@ -46,12 +46,14 @@ EDL = [
     dict(src="v2", a=36.7, b=38.0, caps=[(36.88, 38.0, "so, **Kirti?**")]),
     dict(src="v2", a=46.2, b=48.6, punch=46.5, caps=[(46.4, 48.4, "it's **very tasty**")]),
     # the jar that would not open
-    dict(src="v3", a=7.8, b=11.0, caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
+    dict(src="v3", a=7.8, b=11.0, flash=True, chapter=("03", "the jar"), caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
     dict(src="v3", a=12.0, b=14.1, punch=12.3, sticker=(12.9, "jar 1 – us 0"),
          caps=[(12.24, 14.1, "nobody can even **open** this")]),
-    # sign-off, then freeze on the two of you laughing
+    # sign-off
     dict(src="v2", a=32.6, b=35.6, punch=34.86, caps=[(32.76, 34.8, "so you should come to **Tan Coffee** again"), (34.86, 35.6, "**again!**")]),
-    dict(src="v1", a=2.3, b=3.05, zoom=1.05, freeze=3.2, endcard=True, sfx="pop"),
+    # ...then the laugh "develops" into a polaroid
+    dict(src="v1", a=2.3, b=3.05, zoom=1.05),
+    dict(src="v1", still=3.0, dur=3.4, polaroid=True, endcard=True, flash=True, sfx="shutter"),
 ]
 
 
@@ -59,8 +61,32 @@ def run(cmd):
     subprocess.run(cmd, check=True)
 
 
+def seg_polaroid(out, s):
+    """Freeze the moment as a slightly tilted polaroid over a blurred copy of itself."""
+    n = round(s["dur"] * FPS)
+    look = f"{GRADE[s['src']]},{FINISH}"
+    fc = (f"[0:v]fps={FPS},{look},split[bg][fg];"
+          f"[bg]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},gblur=sigma=30,eq=brightness=-0.12[b];"
+          "[fg]scale=720:900:force_original_aspect_ratio=increase:flags=lanczos,crop=720:900,unsharp=5:5:0.5,"
+          "pad=772:1056:26:26:color=0xF7F2EA,format=rgba,rotate=-3*PI/180:ow=rotw(iw):oh=roth(ih):c=none[card];"
+          f"[b][card]overlay=x=(W-w)/2:y=760-h/2,"
+          f"zoompan=z='1.0+0.06*exp(-in/5)+0.02*in/{n}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s={W}x{H}:fps={FPS},"
+          "format=yuv420p[v]")
+    run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", os.path.join(BUILD, "still.png"),
+         "-f", "lavfi", "-t", f"{n/FPS:.3f}", "-i", "anullsrc=r=48000:cl=stereo",
+         "-filter_complex", fc, "-map", "[v]", "-map", "1:a", "-frames:v", str(n),
+         "-c:v", "libx264", "-crf", "16", "-preset", "medium", "-c:a", "pcm_s16le", "-t", f"{n/FPS:.3f}", out])
+    return out, n / FPS
+
+
 def seg_video(i, s):
     out = os.path.join(BUILD, f"seg{i:02d}.mp4")
+    if s.get("polaroid"):
+        if os.environ.get("REUSE_SEGMENTS") and os.path.exists(out):
+            return out, round(s["dur"] * FPS) / FPS
+        run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["still"]), "-i", os.path.join(SRC, s["src"] + ".mp4"),
+             "-frames:v", "1", os.path.join(BUILD, "still.png")])
+        return seg_polaroid(out, s)
     d = s["b"] - s["a"]
     frz = s.get("freeze", 0.0)
     n = round(d * FPS) + round(frz * FPS)
@@ -76,7 +102,7 @@ def seg_video(i, s):
     zoom = (f"zoompan=z='{zexpr}':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s={W}x{H}:fps={FPS}")
     pad = f",tpad=stop_mode=clone:stop_duration={frz}" if frz else ""
     g = s.get("gain", 1.0)
-    vf = f"fps={FPS},hqdn3d=2:2:4:4,{fit},{zoom}{pad},unsharp=5:5:0.6,{GRADE[s['src']]},{FINISH},format=yuv420p"
+    vf = f"fps={FPS},hqdn3d=2:2:4:4,{fit},{zoom}{pad},unsharp=5:5:0.5,{GRADE[s['src']]},{FINISH},format=yuv420p"
     af = (f"aresample=48000,aformat=channel_layouts=stereo,volume={g},"
           f"afade=t=in:d=0.03,afade=t=out:st={d-0.04:.3f}:d=0.04,apad=whole_dur={n/FPS:.3f}")
     run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["a"]), "-t", f"{d:.3f}", "-i", os.path.join(SRC, s["src"] + ".mp4"),
@@ -92,9 +118,10 @@ def ts(t):
 
 
 def ass_text(t):
-    # **word** -> warm caramel highlight
+    # **word** -> warm caramel serif-italic accent inside the clean sans caption
     parts = t.split("**")
-    return "".join(p if k % 2 == 0 else r"{\c&H6FB0E8&}" + p + r"{\c&HFFFFFF&}" for k, p in enumerate(parts))
+    return "".join(p if k % 2 == 0 else r"{\fnCormorant Garamond Medium Italic\fs118\bord5\shad3\c&H8FC8F2&}" + p + r"{\r}"
+                   for k, p in enumerate(parts))
 
 
 def build_ass(timeline):
@@ -112,6 +139,10 @@ Style: Hook,Inter ExtraBold,68,&H00181410,&H00FFFFFF,&H00F4F8FB,&H00000000,0,0,0
 Style: Sticker,Inter ExtraBold,62,&H00181410,&H00FFFFFF,&H006BC6FF,&H00000000,0,0,0,0,100,100,0,0,3,16,0,5,0,0,0,1
 Style: Title,Cormorant Garamond SemiBold,128,&H00F3F7FB,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,1,0,1,0,4,5,60,60,0,1
 Style: Sub,Cormorant Garamond Medium Italic,66,&H00A9D3EE,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,6,0,1,0,3,5,60,60,0,1
+Style: ChapNo,Inter SemiBold,30,&H00DCE8F2,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,9,0,1,0,2,8,0,0,300,1
+Style: Chap,Cormorant Garamond Medium Italic,92,&H00F3F7FB,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,1,0,1,0,3,8,0,0,345,1
+Style: Card,Cormorant Garamond Medium Italic,50,&H00403A36,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,0,0,5,0,0,0,1
+Style: Flash,Inter,10,&H00F7FAFC,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
 Style: Rule,Inter,10,&H00A9D3EE,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
 
 [Events]
@@ -141,12 +172,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             ev.append(f"Dialogue: 2,{ts(a)},{ts(b)},Title,,0,0,0,,{{{rise(y)}}}{f}Coffee with Kirti")
             ev.append(f"Dialogue: 2,{ts(a+0.15)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(250,200)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
             ev.append(f"Dialogue: 2,{ts(a+0.2)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}Episode 4")
+        if "chapter" in s:
+            no, name = s["chapter"]
+            ev.append(f"Dialogue: 3,{ts(start+0.05)},{ts(start+1.7)},ChapNo,,0,0,0,,{{\\fad(220,260)}}CHAPTER {no}")
+            ev.append(f"Dialogue: 3,{ts(start+0.12)},{ts(start+1.7)},Chap,,0,0,0,,{{\\an8\\fad(260,260)\\move(540,363,540,345,0,400)}}{name}")
+        if s.get("flash"):  # soft white flash, like a camera blink, on scene changes
+            ev.append(f"Dialogue: 4,{ts(start)},{ts(start+0.22)},Flash,,0,0,0,,{{\\pos(0,0)\\1a&H30&\\fad(0,200)\\p1}}m 0 0 l {W} 0 {W} {H} 0 {H}{{\\p0}}")
         if s.get("endcard"):
-            fz = end - s["freeze"]  # freeze-frame starts here
-            ev.append(f"Dialogue: 3,{ts(fz+0.05)},{ts(end)},Hook,,0,0,0,,{{{sticker}}}tag the friend you'd sit on the road with")
-            ev.append(band(fz + 0.4, end, 1180))
-            ev.append(f"Dialogue: 2,{ts(fz+0.5)},{ts(end)},Title,,0,0,0,,{{\\pos(540,1380)\\fad(250,0)}}Coffee with Kirti")
-            ev.append(f"Dialogue: 2,{ts(fz+0.7)},{ts(end)},Sub,,0,0,0,,{{\\pos(540,1500)\\fad(250,0)}}see you in episode 5")
+            ev.append(f"Dialogue: 3,{ts(start+0.35)},{ts(end)},Card,,0,0,0,,{{\\pos(560,1236)\\frz3\\fad(400,0)}}ep. 04 · tan coffee")
+            ev.append(f"Dialogue: 3,{ts(start+0.55)},{ts(end)},Title,,0,0,0,,{{\\pos(540,1400)\\fs110\\fad(300,0)}}Coffee with Kirti")
+            ev.append(f"Dialogue: 3,{ts(start+0.9)},{ts(end)},Cap,,0,0,0,,{{\\an5\\pos(540,1500)\\fs46\\bord3{sticker}}}"
+                      f"tag the friend you'd sit on the road with")
     return head + "\n".join(ev) + "\n"
 
 
@@ -171,6 +207,11 @@ def sfx(timeline, total, path, sr=48000):
     def pop():
         x = t(0.12)
         return np.sin(2 * np.pi * (900 - 2500 * x) * x) * np.exp(-x * 45) * 0.45
+    def shutter():
+        x = t(0.16); n = rng.standard_normal(len(x))
+        clicks = np.exp(-x * 120) + 0.7 * np.exp(-np.clip(x - 0.07, 0, None) * 140) * (x > 0.07)
+        return np.diff(n, prepend=0) * clicks * 0.6
+
     def ding():
         x = t(0.7)
         return (np.sin(2*np.pi*1568*x) + 0.4*np.sin(2*np.pi*2349*x)) * np.exp(-x * 7) * 0.18
@@ -178,8 +219,8 @@ def sfx(timeline, total, path, sr=48000):
     for start, dur, s in timeline:
         if s.get("sfx") == "whoosh":
             put(whoosh(), max(start - 0.2, 0))
-        if s.get("sfx") == "pop":
-            put(pop(), start + dur - s["freeze"])
+        if s.get("sfx") == "shutter":
+            put(shutter(), start)
         if "punch" in s:
             put(pop() * 0.5, start + s["punch"] - s["a"])
         if "sticker" in s:
