@@ -30,9 +30,9 @@ FINISH = ("curves=all='0/0.03 0.25/0.22 0.5/0.5 0.75/0.79 1/0.97',"
 # gain: dialogue level (b-roll is ducked so the music carries it).
 EDL = [
     # cold open - the jar that beat us, with one line to make you stay
-    dict(src="v3", a=11.0, b=14.1, zoom=1.12, ribbon_y=150, ribbons=[
-        dict(words=["COFFEE WITH KIRTI", "EP 04"], colors=BUTTER, cy=330, angle=8, direction=-1, bh=110),
-        dict(words=["RATING TAN COFFEE", "LOSING TO A JAR"], colors=PINK, cy=230, angle=-6, direction=1, bh=165, speed=430)],
+    dict(src="v3", a=12.05, b=14.1, zoom=1.12, ribbon_y=150, ribbons=[
+        dict(words=["COFFEE WITH KIRTI"], colors=BUTTER, cy=330, angle=8, direction=-1, bh=110),
+        dict(words=["COFFEE WITH KIRTI"], colors=PINK, cy=230, angle=-6, direction=1, bh=165, speed=300)],
          caps=[(12.24, 14.1, "nobody can even **open** this")]),
     # title over the first dessert jar (which, ironically, opens just fine)
     dict(src="v2", a=0.0, b=3.6, zoom=1.0, gain=0.15, title=True),
@@ -52,7 +52,7 @@ EDL = [
     # sign-off, then the end card over one last happy bite
     dict(src="v2", a=32.6, b=35.6, zoom=1.0, caps=[(32.76, 34.8, "so you should come to **Tan Coffee** again"), (34.86, 35.6, "again!")]),
     dict(src="v2", a=50.0, b=54.0, zoom=1.0, gain=0.15, endcard=True, ribbon_y=1080, ribbons=[
-        dict(words=["SEE YOU AT THE NEXT TABLE", "COFFEE WITH KIRTI"], colors=PINK, cy=230, angle=-5, direction=1, bh=130)]),
+        dict(words=["COFFEE WITH KIRTI"], colors=PINK, cy=230, angle=-5, direction=1, bh=130)]),
 ]
 
 
