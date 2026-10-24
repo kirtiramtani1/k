@@ -28,16 +28,16 @@ FINISH = ("curves=r='0/0.05 0.5/0.52 1/0.96':g='0/0.045 0.5/0.5 1/0.95':b='0/0.0
 # punch: source time of a quick punch-in; hook/sticker: on-screen text; sfx: sound accent.
 EDL = [
     # cold open - the laugh + the line that makes you ask "wait, why?"
-    dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, hook="POV: fresh haircuts, zero plans",
+    dict(src="v1", a=8.9, b=12.4, zoom=1.08, punch=10.4, headline=("FRESH HAIRCUTS.", "ZERO PLANS."),
          caps=[(10.4, 12.36, "we're sitting on the **ROAD**")]),
     # title over the first dessert jar
     dict(src="v2", a=0.6, b=2.7, gain=0.35, title=True, sfx="whoosh", flash=True),
-    dict(src="v1", a=0.0, b=2.3, chapter=("01", "the road"), caps=[(0.0, 2.3, "no idea where we've ended up")]),
+    dict(src="v1", a=0.0, b=2.3, section="location: the road", caps=[(0.0, 2.3, "no idea where we've ended up")]),
     dict(src="v1", a=3.9, b=9.0, punch=6.6, caps=[
         (3.98, 5.88, "sitting on the road"),
         (5.88, 9.0, "after getting haircuts like **THIS**")]),
     dict(src="v1", a=12.3, b=14.6, zoom=1.1, caps=[(12.36, 14.6, "haan, **piyenge** yaar!")]),
-    dict(src="v2", a=19.3, b=21.0, gain=0.3, sfx="whoosh", flash=True, chapter=("02", "tan coffee")),
+    dict(src="v2", a=19.3, b=21.0, gain=0.3, sfx="whoosh", flash=True, section="honest review: Tan Coffee"),
     dict(src="v2", a=6.0, b=8.1, caps=[(6.14, 8.1, "this is **nice**, guys")]),
     dict(src="v2", a=9.0, b=11.6, punch=10.4, caps=[(9.02, 11.6, "now... the **first bite**")]),
     dict(src="v2", a=23.0, b=25.0, gain=0.25),
@@ -46,7 +46,7 @@ EDL = [
     dict(src="v2", a=36.7, b=38.0, caps=[(36.88, 38.0, "so, **Kirti?**")]),
     dict(src="v2", a=46.2, b=48.6, punch=46.5, caps=[(46.4, 48.4, "it's **very tasty**")]),
     # the jar that would not open
-    dict(src="v3", a=7.8, b=11.0, flash=True, chapter=("03", "the jar"), caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
+    dict(src="v3", a=7.8, b=11.0, flash=True, section="the jar that won't open", caps=[(8.0, 8.6, "**talent!**"), (8.86, 11.0, "what are you doing? open it like this")]),
     dict(src="v3", a=12.0, b=14.1, punch=12.3, sticker=(12.9, "jar 1 – us 0"),
          caps=[(12.24, 14.1, "nobody can even **open** this")]),
     # sign-off
@@ -117,11 +117,68 @@ def ts(t):
     return f"{int(h)}:{int(m):02d}:{s:05.2f}"
 
 
-def ass_text(t):
-    # **word** -> warm caramel serif-italic accent inside the clean sans caption
-    parts = t.split("**")
-    return "".join(p if k % 2 == 0 else r"{\fnCormorant Garamond Medium Italic\fs118\bord5\shad3\c&H8FC8F2&}" + p + r"{\r}"
-                   for k, p in enumerate(parts))
+FONT_FILES = {
+    "Inter ExtraBold": "/usr/share/fonts/opentype/inter/Inter-ExtraBold.otf",
+    "Luckiest Guy": os.path.join(FONTS, "LuckiestGuy-Regular.ttf"),
+}
+YELLOW, INK, PINK, CREAM = "&H4DE1FF&", "&H1A1410&", "&HA34FFF&", "&HEAF2F7&"
+
+
+def text_w(font, size, txt):
+    """Rendered width in px of txt at an ASS font size (libass sizes by ascent+descent)."""
+    from PIL import ImageFont
+    f = ImageFont.truetype(FONT_FILES[font], 100)
+    asc, desc = f.getmetrics()
+    return ImageFont.truetype(FONT_FILES[font], round(size * 100 / (asc + desc))).getlength(txt)
+
+
+def rrect(w, h, r):
+    w, h = round(w), round(h)
+    return (f"m {r} 0 l {w-r} 0 b {w} 0 {w} 0 {w} {r} l {w} {h-r} b {w} {h} {w} {h} {w-r} {h} "
+            f"l {r} {h} b 0 {h} 0 {h} 0 {h-r} l 0 {r} b 0 0 0 0 {r} 0")
+
+
+def ass_text(t, t0=0, dur=1.0):
+    """Words type on one after another; **word** turns bright yellow."""
+    words, out, hi = t.replace("**", " ** ").split(), [], False
+    real = [w for w in words if w != "**"]
+    step = min(90, int(dur * 1000 * 0.45 / max(len(real), 1)))
+    k = 0
+    for w in words:
+        if w == "**":
+            hi = not hi
+            continue
+        col = YELLOW if hi else "&HFFFFFF&"
+        out.append(rf"{{\alpha&HFF&\1c{col}\t({k*step},{k*step+70},\alpha&H00&)}}{w}")
+        k += 1
+    return " ".join(out)
+
+
+def box(layer, t0, t1, x, y, txt, size=58, rot=0, fill="&HFFFFFF&", ink=INK, anim="slide"):
+    """White rounded label (reference style) that springs in."""
+    w = text_w("Inter ExtraBold", size, txt) + size * 0.9
+    h = size * 1.55
+    move = {"slide": rf"\move({x-60},{y},{x},{y},0,180)", "none": rf"\pos({x},{y})"}[anim]
+    spring = r"\fscx70\fscy70\t(0,140,\fscx106\fscy106)\t(140,240,\fscx100\fscy100)\fad(0,160)"
+    return [
+        f"Dialogue: {layer},{ts(t0)},{ts(t1)},Box,,0,0,0,,{{\\an5{move}\\frz{rot}\\1c{fill}\\shad6\\4a&HA0&{spring}\\p1}}{rrect(w, h, round(h*0.32))}{{\\p0}}",
+        f"Dialogue: {layer+1},{ts(t0)},{ts(t1)},BoxTxt,,0,0,0,,{{\\an5{move}\\frz{rot}\\fs{size}\\1c{ink}{spring}}}{txt}",
+    ]
+
+
+def headline(layer, t0, t1, lines, y0=330, size=150):
+    """Chunky two-tone headline; each word drops in with a bounce, then gently sways."""
+    ev, k = [], 0
+    for li, line in enumerate(lines):
+        y = y0 + li * round(size * 0.98)
+        x = 540
+        ev.append(f"Dialogue: {layer},{ts(t0)},{ts(t1)},Head,,0,0,0,,{{\\an5\\pos({x},{y})\\frz{3 if li == 0 else -2}"
+                  + "\\fad(0,150)}"
+                  + " ".join(rf"{{\alpha&HFF&\fscx40\fscy40\t({k0*110},{k0*110+90},\alpha&H00&\fscx115\fscy115)"
+                             rf"\t({k0*110+90},{k0*110+200},\fscx100\fscy100)}}{w}"
+                             for k0, w in enumerate(line.split(), start=k)))
+        k += len(line.split())
+    return ev
 
 
 def build_ass(timeline):
@@ -134,13 +191,13 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,Inter ExtraBold,76,&H00FFFFFF,&H00FFFFFF,&H00141018,&H96000000,0,0,0,0,100,100,0,0,1,6,3,2,100,100,440,1
-Style: Hook,Inter ExtraBold,68,&H00181410,&H00FFFFFF,&H00F4F8FB,&H00000000,0,0,0,0,100,100,0,0,3,18,0,8,90,90,290,1
-Style: Sticker,Inter ExtraBold,62,&H00181410,&H00FFFFFF,&H006BC6FF,&H00000000,0,0,0,0,100,100,0,0,3,16,0,5,0,0,0,1
+Style: Cap,Inter ExtraBold,74,&H00FFFFFF,&H00FFFFFF,&H00141018,&H80000000,0,0,0,0,100,100,0,0,1,4.5,4,2,100,100,470,1
+Style: Head,Luckiest Guy,150,{YELLOW},&H00FFFFFF,{INK},{PINK},0,0,0,0,100,100,2,0,1,9,9,5,40,40,0,1
+Style: Box,Inter,10,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
+Style: BoxTxt,Inter ExtraBold,58,{INK},&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
+Style: Badge,Inter ExtraBold,30,&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,0,0,0,0,100,100,2,0,1,0,2,7,0,0,0,1
 Style: Title,Cormorant Garamond SemiBold,128,&H00F3F7FB,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,1,0,1,0,4,5,60,60,0,1
 Style: Sub,Cormorant Garamond Medium Italic,66,&H00A9D3EE,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,6,0,1,0,3,5,60,60,0,1
-Style: ChapNo,Inter SemiBold,30,&H00DCE8F2,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,9,0,1,0,2,8,0,0,300,1
-Style: Chap,Cormorant Garamond Medium Italic,92,&H00F3F7FB,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,1,0,1,0,3,8,0,0,345,1
 Style: Card,Cormorant Garamond Medium Italic,50,&H00403A36,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,0,0,5,0,0,0,1
 Style: Flash,Inter,10,&H00F7FAFC,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
 Style: Rule,Inter,10,&H00A9D3EE,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
@@ -149,41 +206,62 @@ Style: Rule,Inter,10,&H00A9D3EE,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ev = []
-    pop = r"{\fad(60,90)\fscx80\fscy80\t(0,90,\fscx108\fscy108)\t(90,170,\fscx100\fscy100)}"
-    sticker = r"\fscx0\fscy0\t(0,120,\fscx118\fscy118)\t(120,220,\fscx100\fscy100)\fad(0,150)"
+    pop = r"{\fad(40,90)\fscx88\fscy88\t(0,110,\fscx104\fscy104)\t(110,190,\fscx100\fscy100)}"
     band = lambda t0, t1, y: (f"Dialogue: 0,{ts(t0)},{ts(t1)},Rule,,0,0,0,,{{\\pos(0,{y})\\an7\\1c&H0A0C10&\\1a&H70&"
                               f"\\blur40\\fad(300,300)\\p1}}m 0 0 l 1080 0 1080 470 0 470{{\\p0}}")
     rel = lambda start, s, x: start + x - s["a"]
+    total = timeline[-1][0] + timeline[-1][1]
     for start, dur, s in timeline:
         end = start + dur
         for (ca, cb, txt) in s.get("caps", []):
             t0, t1 = max(rel(start, s, ca), start), min(rel(start, s, cb), end)
-            ev.append(f"Dialogue: 1,{ts(t0)},{ts(t1)},Cap,,0,0,0,,{pop}{ass_text(txt)}")
-        if "hook" in s:
-            ev.append(f"Dialogue: 3,{ts(start)},{ts(end)},Hook,,0,0,0,,{{\\fad(0,120)\\fscx85\\fscy85\\t(0,120,\\fscx100\\fscy100)}}{s['hook']}")
+            ev.append(f"Dialogue: 1,{ts(t0)},{ts(t1)},Cap,,0,0,0,,{pop}{ass_text(txt, t0, t1 - t0)}")
+        if "headline" in s:
+            ev += headline(5, start + 0.05, end, s["headline"])
+        if "section" in s:
+            ev += box(5, start + 0.1, start + 1.9, 540, 330, s["section"])
         if "sticker" in s:
             st, txt = s["sticker"]
-            ev.append(f"Dialogue: 3,{ts(rel(start, s, st))},{ts(end)},Sticker,,0,0,0,,{{\\pos(740,600)\\frz7{sticker}}}{txt}")
+            ev += box(5, rel(start, s, st), end, 735, 620, txt, size=56, rot=6, fill=YELLOW, anim="none")
         if s.get("title"):
             a, b, y = start + 0.1, end - 0.05, 760
             ev.append(band(a - 0.05, b, y - 200))
-            rise = lambda y0: rf"\move(540,{y0+18},540,{y0},0,400)"
-            f = r"{\fad(250,200)\blur0.6}"
+            rise = lambda y0: rf"\move(540,{y0+30},540,{y0},0,450)"
+            f = r"{\fad(250,200)\blur0.6\fscx92\fscy92\t(0,500,\fscx100\fscy100)}"
             ev.append(f"Dialogue: 2,{ts(a)},{ts(b)},Title,,0,0,0,,{{{rise(y)}}}{f}Coffee with Kirti")
-            ev.append(f"Dialogue: 2,{ts(a+0.15)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(250,200)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
-            ev.append(f"Dialogue: 2,{ts(a+0.2)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}Episode 4")
-        if "chapter" in s:
-            no, name = s["chapter"]
-            ev.append(f"Dialogue: 3,{ts(start+0.05)},{ts(start+1.7)},ChapNo,,0,0,0,,{{\\fad(220,260)}}CHAPTER {no}")
-            ev.append(f"Dialogue: 3,{ts(start+0.12)},{ts(start+1.7)},Chap,,0,0,0,,{{\\an8\\fad(260,260)\\move(540,363,540,345,0,400)}}{name}")
+            # gold rule draws itself left-to-right
+            ev.append(f"Dialogue: 2,{ts(a+0.15)},{ts(b)},Rule,,0,0,0,,{{\\pos(540,{y+92})\\fad(250,200)\\fscx0\\t(0,450,\\fscx100)\\p1}}m 0 0 l 220 0 220 3 0 3{{\\p0}}")
+            ev.append(f"Dialogue: 2,{ts(a+0.3)},{ts(b)},Sub,,0,0,0,,{{{rise(y+160)}}}{f}Episode 4")
         if s.get("flash"):  # soft white flash, like a camera blink, on scene changes
-            ev.append(f"Dialogue: 4,{ts(start)},{ts(start+0.22)},Flash,,0,0,0,,{{\\pos(0,0)\\1a&H30&\\fad(0,200)\\p1}}m 0 0 l {W} 0 {W} {H} 0 {H}{{\\p0}}")
+            ev.append(f"Dialogue: 6,{ts(start)},{ts(start+0.22)},Flash,,0,0,0,,{{\\pos(0,0)\\1a&H30&\\fad(0,200)\\p1}}m 0 0 l {W} 0 {W} {H} 0 {H}{{\\p0}}")
         if s.get("endcard"):
             ev.append(f"Dialogue: 3,{ts(start+0.35)},{ts(end)},Card,,0,0,0,,{{\\pos(560,1236)\\frz3\\fad(400,0)}}ep. 04 · tan coffee")
-            ev.append(f"Dialogue: 3,{ts(start+0.55)},{ts(end)},Title,,0,0,0,,{{\\pos(540,1400)\\fs110\\fad(300,0)}}Coffee with Kirti")
-            ev.append(f"Dialogue: 3,{ts(start+0.9)},{ts(end)},Cap,,0,0,0,,{{\\an5\\pos(540,1500)\\fs46\\bord3{sticker}}}"
-                      f"tag the friend you'd sit on the road with")
+            ev.append(f"Dialogue: 3,{ts(start+0.55)},{ts(end)},Title,,0,0,0,,{{\\pos(540,1395)\\fs112\\fad(300,0)\\fscx90\\fscy90\\t(0,400,\\fscx100\\fscy100)}}Coffee with Kirti")
+            ev += box(5, start + 0.95, end, 540, 1510, "tag the friend you'd sit on the road with", size=40, rot=-2)
+    # small series badge, top-left, after the cold open
+    b0 = timeline[1][0]
+    ev.append(f"Dialogue: 2,{ts(b0)},{ts(total-3.4)},Box,,0,0,0,,{{\\an7\\pos(60,215)\\1c&H000000&\\1a&H90&\\fad(300,300)\\p1}}{rrect(text_w('Inter ExtraBold', 30, 'COFFEE WITH KIRTI · EP 04') + 58, 52, 26)}{{\\p0}}")
+    ev.append(f"Dialogue: 3,{ts(b0)},{ts(total-3.4)},Badge,,0,0,0,,{{\\an7\\pos(84,226)\\fad(300,300)}}COFFEE WITH KIRTI · EP 04")
     return head + "\n".join(ev) + "\n"
+
+
+def cover(still_seg, path):
+    """Grid/cover image: the polaroid moment with the episode's headline."""
+    ass = os.path.join(BUILD, "cover.ass")
+    lines = [
+        f"Dialogue: 2,0:00:00.00,0:00:05.00,Rule,,0,0,0,,{{\\pos(0,180)\\an7\\1c&H0A0C10&\\1a&H60&\\blur50\\p1}}m 0 0 l 1080 0 1080 380 0 380{{\\p0}}",
+        f"Dialogue: 5,0:00:00.00,0:00:05.00,Head,,0,0,0,,{{\\an5\\pos(540,300)\\frz3}}FRESH HAIRCUTS.",
+        f"Dialogue: 5,0:00:00.00,0:00:05.00,Head,,0,0,0,,{{\\an5\\pos(540,445)\\frz-2}}ZERO PLANS.",
+        f"Dialogue: 3,0:00:00.00,0:00:05.00,Card,,0,0,0,,{{\\pos(560,1236)\\frz3}}ep. 04 · tan coffee",
+        f"Dialogue: 3,0:00:00.00,0:00:05.00,Title,,0,0,0,,{{\\pos(540,1395)\\fs112}}Coffee with Kirti",
+    ] + box(5, 0, 5, 540, 1510, "Episode 4  |  Tan Coffee", size=44, anim="none")
+    full = build_ass([(0, 1.0, {"a": 0}), (1.0, 1.0, {"a": 0})])
+    with open(ass, "w") as fh:
+        fh.write(full.split("[Events]")[0] + "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+                 + "\n".join(l.replace("\\fscx70\\fscy70\\t(0,140,\\fscx106\\fscy106)\\t(140,240,\\fscx100\\fscy100)\\fad(0,160)", "")
+                             for l in lines) + "\n")
+    run(["ffmpeg", "-v", "error", "-y", "-ss", "2.0", "-i", still_seg, "-frames:v", "1",
+         "-vf", f"subtitles={ass}:fontsdir={FONTS}", "-q:v", "2", path])
 
 
 def sfx(timeline, total, path, sr=48000):
@@ -336,6 +414,7 @@ def main():
     run(["ffmpeg", "-v", "error", "-y", "-i", cut, "-i", bed, "-i", fx, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
          "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", final])
+    cover(files[-1], os.path.join(HERE, "Coffee_with_Kirti_Ep04_cover.jpg"))
     print(f"rendered {final} ({total:.1f}s)")
 
 
